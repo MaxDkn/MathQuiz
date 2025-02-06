@@ -33,7 +33,7 @@ class QuestionData(BaseModel):
 
 
 class ChooseSubject(BaseModel):
-    subjects: Optional[List[str, None]] = ["Algebra", "Arithmetic", "Trigonometry", "Geometry"]
+    subjects: Optional[List[Optional[str]]] = ["Algebra", "Arithmetic", "Trigonometry", "Geometry"]
 
 
 @app.post('/api/generate')
@@ -45,7 +45,7 @@ try:
     app.mount('/static', StaticFiles(directory="../ui/build/static"), 'static')
     templates = Jinja2Templates(directory="../ui/build")
 except Exception as e:
-    logger.warning(f'Error, cannot display react app ({e.__str__()} - {e.args}).')
+    logger.warning(f'{"ERROR:".ljust(10)}Cannot display react application ({e.__str__()}).')
 else:
     logger.info('React App successfully found running on ["/"]')
 
@@ -55,7 +55,4 @@ else:
 
 
 if __name__ == '__main__':
-
-    for _ in range(10):
-        print(generate_mcq_question(subjects=['Arithmetic']))
     uvicorn.run(app)

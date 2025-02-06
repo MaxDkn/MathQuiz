@@ -115,7 +115,7 @@ assert convert_degree_into_radian('-45°') == f'-{pi}/4'
 assert convert_degree_into_radian('225°') == f'5{pi}/4'
 
 
-def generate_number_without_value(interval: tuple = (-10, 10), *, forbidden_value: int or list = 0) -> int:
+def generate_number_without_value(interval: tuple = (-10, 10), *, forbidden_value: Union[int, list] = 0) -> int:
     """
     generates a random number from an interval without a specific value. if you don't want to remove value from
     the interval, you just have to put a forbidden value that is not into the interval.
@@ -264,16 +264,19 @@ class Algebra(QuestionsMCQ):
     #  Starting questions. I put many arguments in the function, but they are not required.
     #  This is only to manage the "settings" of a question.
     def q_calculate_antecedent(self, shuffle_the_equation: bool = True, *, a_interval: tuple = (-4, 4),
-                               c_interval: tuple = (-2, 2), x_interval: tuple = (-10, 10)) -> dict:
+                               c_interval: tuple = (-2, 2), x_interval: tuple = (-10, 10), **kwargs) -> dict:
         """
         Ask the user to found the antecedent of a first degree's function (it's the same as resolve an equation)
         """
 
         #  Check if arguments are valid (in this case, if a_interval is equal to (0, 0))
         assert a_interval != (0, 0)
-        sentences = ['Quelle est la valeur de x dans {equation}={c} ?',
-                     'Quelle est la solution de {equation}={c} ?',
-                     'Donner l\'antécédent de {c} avec f(x)={equation}.']
+
+        latex = kwargs.get('latex')
+        #  lf means latex_format (If latex is equal to true, we add $$ in math formula)
+        sentences = ['Quelle est la valeur de x dans {lf}{equation}={c}{lf} ?',
+                     'Quelle est la solution de {lf}{equation}={c}{lf} ?',
+                     'Donner l\'antécédent de {lf}{c}{lf} avec {lf}f(x)={equation}{lf}.']
         #  We randomly took a coefficient before the x
         a = generate_number_without_value(a_interval)
         x = generate_number_without_value(x_interval)
@@ -297,7 +300,8 @@ class Algebra(QuestionsMCQ):
                 'index_answer': values.index(x)}
 
     def q_calculate_image(self, shuffle_the_equation: bool = True, *, a_interval: tuple = (-4, 4),
-                          b_interval: tuple = (-6, 6), c_interval: tuple = (-10, 10), x_interval: tuple = (-2, 2)):
+                          b_interval: tuple = (-6, 6), c_interval: tuple = (-10, 10), x_interval: tuple = (-2, 2),
+                          **kwargs):
         """
         ask user to calculate the image of a number, in first or second degrees equations
         """
@@ -347,7 +351,7 @@ class Algebra(QuestionsMCQ):
                 'suggested_answer': values,
                 'index_answer': values.index(answer)}
 
-    def q_give_factorisation_form(self, shuffle_the_equation: bool = True) -> dict:
+    def q_give_factorisation_form(self, shuffle_the_equation: bool = True, **kwargs) -> dict:
         """
         Ask user to found which equation is the factorization form of the polynomial equation.
         E.g., -x²+5x-4 => -(x-1)(x-4)
@@ -396,7 +400,7 @@ class Algebra(QuestionsMCQ):
 
     @staticmethod
     def q_calcul_product(multiplication_tables_interval: tuple = (6, 12),
-                         odds_for_11: Optional[float] = 1 / 6) -> dict:
+                         odds_for_11: Optional[float] = 1 / 6, **kwargs) -> dict:
         """
         generates a question about multiplication tables, and offers several answers.
         I try to make the other answers consistent.
@@ -482,7 +486,7 @@ class Arithmetic(QuestionsMCQ):
         return prime_numbers
 
     @staticmethod
-    def q_perfect_square(interval: tuple = (25, 196)) -> dict:
+    def q_perfect_square(interval: tuple = (25, 196), **kwargs) -> dict:
         """
         ask if a number is a perfect square or not, the answer is True or False.
         """
@@ -507,7 +511,7 @@ class Arithmetic(QuestionsMCQ):
                 'suggested_answer': values,
                 'index_answer': values.index(is_perfect_square)}
 
-    def q_prime_number(self, interval: tuple = (10, 40)) -> dict:
+    def q_prime_number(self, interval: tuple = (10, 40), **kwargs) -> dict:
         """
         ask if a number is a prime number or not.
         """
@@ -532,7 +536,7 @@ class Arithmetic(QuestionsMCQ):
 
     @staticmethod
     def q_greatest_lower_common_divisor_multiple(interval: tuple = (20, 40),
-                                                 solution_interval: tuple = (2, 6)) -> dict:
+                                                 solution_interval: tuple = (2, 6), **kwargs) -> dict:
         """
         ask the greatest common divisor or the lower common multiple of two numbers and suggest several solutions.
         :param interval: interval of the two numbers
@@ -574,7 +578,7 @@ class Arithmetic(QuestionsMCQ):
 
     @staticmethod
     def q_is_divisible_by_a_number(interval: tuple = (100, 10_000),
-                                   divisors: tuple = (3, 5, 6, 7, 10, 15)) -> dict:
+                                   divisors: tuple = (3, 5, 6, 7, 10, 15), **kwargs) -> dict:
         """
         ask if a number is divisible by another one, using the divisible rules with specific numbers.
         The rule for the number 7 is not famous, but I know the trick :
@@ -685,7 +689,7 @@ class Geometry(QuestionsMCQ):
         delta = self.prefix['units'].index(target_prefix) - self.prefix['units'].index(source_prefix)
         return source_value * 10 ** delta
 
-    def q_how_many_side(self) -> dict:
+    def q_how_many_side(self, **kwargs) -> dict:
         sentences = ['Combien de côté un {polygone_prefix}agone possède t\'il ?',
                      'Un {polygone_prefix}agone, c\'est un polygone à comien de coté ?',
                      'Nombre de coté d\'un {polygone_prefix}agone ?']
@@ -705,7 +709,7 @@ class Geometry(QuestionsMCQ):
                 'suggested_answer': values,
                 'index_answer': values.index(answer)}
 
-    def q_angles_sum(self) -> dict:
+    def q_angles_sum(self, **kwargs) -> dict:
         """
          Creates a multiple-choice question about the sum of angles of a geometric shape.
         """
@@ -733,7 +737,7 @@ class Geometry(QuestionsMCQ):
                 'suggested_answer': values,
                 'index_answer': values.index(answer)}
 
-    def q_triangle_nature(self, interval: tuple = (3, 10), shuffle_answers: bool = True) -> dict:
+    def q_triangle_nature(self, interval: tuple = (3, 10), shuffle_answers: bool = True, **kwargs) -> dict:
         """
         Generates a multiple-choice question to determine the type of triangle based on its sides.
 
@@ -776,7 +780,7 @@ class Geometry(QuestionsMCQ):
                 'suggested_answer': values,
                 'index_answer': values.index(answer)}
 
-    def q_convert_unit(self) -> dict:
+    def q_convert_unit(self, **kwargs) -> dict:
         """
         generates a question for converting a value between units with proper formatting.
         """
@@ -860,7 +864,7 @@ class Trigonometry(QuestionsMCQ):
         value = str(value) + '°'
         return value
 
-    def q_found_value(self) -> dict:
+    def q_found_value(self, **kwargs) -> dict:
         """
         Generates a question about the value of a trigonometric function for a given angle.
         """
@@ -895,7 +899,7 @@ class Trigonometry(QuestionsMCQ):
                 'suggested_answer': values,
                 'index_answer': values.index(answer)}
 
-    def q_is_the_same_value(self):
+    def q_is_the_same_value(self, **kwargs):
         """
             Generates a question about whether two angles are equivalent on the unit circle.
         """
@@ -929,7 +933,7 @@ class Trigonometry(QuestionsMCQ):
                 'suggested_answer': values,
                 'index_answer': values.index(answer)}
 
-    def q_convert_value_into_degree_or_radian(self):
+    def q_convert_value_into_degree_or_radian(self, **kwargs):
         """
         Generates a question about converting a value between degrees and radians.
 
