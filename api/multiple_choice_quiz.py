@@ -36,6 +36,7 @@ from random import randint, choice, shuffle, choices, random
 from math import ceil, sin, cos, radians, prod, gcd, lcm, floor
 from typing import Optional, Union
 
+
 pi = 'π'  # or 'pi' if 'π' doesn't work
 sqrt = '√({number})'  # or 'sqrt({number})' if it doesn't draw on the terminal
 
@@ -71,6 +72,17 @@ def decomposition_prime_factor(n: int) -> list[int]:
 assert decomposition_prime_factor(42) == [2, 3, 7]
 assert decomposition_prime_factor(-28) == [-1, 2, 2, 7]
 assert decomposition_prime_factor(0) == []
+
+
+def transform_value_to_latex_format(value: Union[int, str, float], center: bool =False):
+    """
+    returns the latex format for a single value
+    """
+    return f'${"$" if center else ""}{value}{"$" if center else ""}$'
+
+
+assert transform_value_to_latex_format(5) == "$5$"
+assert transform_value_to_latex_format("f(x)=5x+2", center=True) == "$$f(x)=5x+2$$"
 
 
 def convert_degree_into_radian(degree: str) -> str:
@@ -274,9 +286,9 @@ class Algebra(QuestionsMCQ):
 
         latex = kwargs.get('latex')
         #  lf means latex_format (If latex is equal to true, we add $$ in math formula)
-        sentences = ['Quelle est la valeur de x dans {lf}{equation}={c}{lf} ?',
-                     'Quelle est la solution de {lf}{equation}={c}{lf} ?',
-                     'Donner l\'antécédent de {lf}{c}{lf} avec {lf}f(x)={equation}{lf}.']
+        sentences = ['Quelle est la valeur de x dans {equation}={c} ?',
+                     'Quelle est la solution de {equation}={c} ?',
+                     'Donner l\'antécédent de {c} avec f(x)={equation}.']
         #  We randomly took a coefficient before the x
         a = generate_number_without_value(a_interval)
         x = generate_number_without_value(x_interval)
@@ -290,7 +302,8 @@ class Algebra(QuestionsMCQ):
         if int(a * c + b) != x and a * c + b != -(c + b) / a:
             values.append(int(a * c + b))  # This value is to trap the user if he confuses image and antecedent
         else:
-            values.append(generate_number_without_value(x_interval, forbidden_value=values))
+            generated_value = generate_number_without_value(x_interval, forbidden_value=values)
+            values.append(generated_value)
         values.append(generate_number_without_value(x_interval, forbidden_value=values))
         values = shuffle_a_list(values)
 
