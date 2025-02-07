@@ -35,10 +35,21 @@ My Personal To Do List:
 from random import randint, choice, shuffle, choices, random
 from math import ceil, sin, cos, radians, prod, gcd, lcm, floor
 from typing import Optional, Union
-
+from tqdm import tqdm
 
 pi = 'π'  # or 'pi' if 'π' doesn't work
 sqrt = '√({number})'  # or 'sqrt({number})' if it doesn't draw on the terminal
+
+
+class Latex:
+    pi = '\pi'
+    sqrt = '\sqrt{{{n}}}'  # sqrt.format(number=6) returns \sqrt{6} and this is the latex format
+    frac = r"\frac{{{a}}}{{{b}}}"
+
+
+assert Latex.pi == '\pi'
+assert Latex.frac.format(a=5, b=2) == r"\frac{5}{2}"
+assert Latex.sqrt.format(n=5) == "\sqrt{5}"
 
 
 def decomposition_prime_factor(n: int) -> list[int]:
@@ -85,13 +96,17 @@ assert transform_value_to_latex_format(5) == "$5$"
 assert transform_value_to_latex_format("f(x)=5x+2", center=True) == "$$f(x)=5x+2$$"
 
 
-def convert_degree_into_radian(degree: str) -> str:
+def convert_degree_into_radian(degree: str, latex: bool = True) -> str:
     """
     return the radian value of a degree angle
     :param degree: have to end by °
     :return: radian value of the angle
     """
     result: str = ''
+    degree_latex = '^\circ'
+    if latex:
+        if degree.endswith(degree_latex):
+            value = int(degree[:-len(degree_latex)])    
     if degree.endswith('°'):
         value = int(degree[:-1])
     else:
@@ -1059,16 +1074,16 @@ def run(number_of_questions: Optional[int] = None, subjects: Union[list[str], st
 
 
 def simple_test():
-    for _ in range(500):
+    for _ in tqdm(range(500)):
         data = Trigonometry().q_found_value()
-        print(data)
+        #  print(data)
         try:
             assert (data.get('question') is not None and data.get('suggested_answer') is not None and
                     data.get('index_answer') is not None)
         except AssertionError:
             print(data)
             exit()
-    print('Everything is correct.')
+    #  print('Everything is correct.')
 
 
 if __name__ == '__main__':
