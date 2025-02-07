@@ -42,14 +42,12 @@ sqrt = '√({number})'  # or 'sqrt({number})' if it doesn't draw on the terminal
 
 
 class Latex:
-    pi = '\pi'
-    sqrt = '\sqrt{{{n}}}'  # sqrt.format(number=6) returns \sqrt{6} and this is the latex format
-    frac = r"\frac{{{a}}}{{{b}}}"
-
-
-assert Latex.pi == '\pi'
-assert Latex.frac.format(a=5, b=2) == r"\frac{5}{2}"
-assert Latex.sqrt.format(n=5) == "\sqrt{5}"
+    pi = '\\pi'
+    sqrt = '\\sqrt{{{n}}}'  # sqrt.format(number=6) returns \sqrt{6} and this is the latex format
+    frac = "\\frac{{{a}}}{{{b}}}"
+    degree = '^\\circ'
+    times = "\\times"
+    delta = "\\Delta"
 
 
 def decomposition_prime_factor(n: int) -> list[int]:
@@ -85,32 +83,36 @@ assert decomposition_prime_factor(-28) == [-1, 2, 2, 7]
 assert decomposition_prime_factor(0) == []
 
 
-def transform_value_to_latex_format(value: Union[int, str, float], center: bool =False):
+def convert_value_to_latex(value: Union[int, str, float], center: bool = False):
     """
     returns the latex format for a single value
     """
     return f'${"$" if center else ""}{value}{"$" if center else ""}$'
 
 
-assert transform_value_to_latex_format(5) == "$5$"
-assert transform_value_to_latex_format("f(x)=5x+2", center=True) == "$$f(x)=5x+2$$"
+assert convert_value_to_latex(5) == "$5$"
+assert convert_value_to_latex("f(x)=5x+2", center=True) == "$$f(x)=5x+2$$"
 
 
-def convert_degree_into_radian(degree: str, latex: bool = True) -> str:
+def convert_degree_into_radian(degree: str, latex: bool = False) -> str:
     """
     return the radian value of a degree angle
-    :param degree: have to end by °
+    :param latex: true or false, if we want to work with the latex format
+    :param degree: have to end with "°"
     :return: radian value of the angle
     """
     result: str = ''
-    degree_latex = '^\circ'
     if latex:
-        if degree.endswith(degree_latex):
-            value = int(degree[:-len(degree_latex)])    
-    if degree.endswith('°'):
-        value = int(degree[:-1])
+        if degree.endswith(Latex.degree):
+            value = int(degree[:-len(Latex.degree)])
+        else:
+            raise ValueError(f'The argument "degree" has to end with the following characters "{Latex.degree}".'
+                             f' (degree={degree})')
     else:
-        raise 'The argument "degree" has to end by "°".'
+        if degree.endswith('°'):
+            value = int(degree[:-1])
+        else:
+            raise ValueError(f'The argument "degree" has to end by "°". (degree={degree})')
     #  simplification :
     prime_factor_value = decomposition_prime_factor(value)
     prime_factor_180 = [2, 2, 3, 3, 5]
@@ -124,22 +126,24 @@ def convert_degree_into_radian(degree: str, latex: bool = True) -> str:
     for item_to_remove in to_remove:
         prime_factor_value.remove(item_to_remove)
     product = prod(prime_factor_value)
+    sign = "-" if product < 0 else ""
+    #  case where the product is 1 ou -1, we don't draw 1π or -1π but just π or -π
     if abs(product) == 1:
-        result += f'{"-" if product < 0 else ""}{pi}'
+        a = Latex.pi if latex else pi
     else:
-        result += f'{product}{pi}'
-    product2 = prod(prime_factor_180)
-    if product2 == 1:
-        pass
+        a = f"{abs(product)}{Latex.pi if latex else pi}"
+    b = prod(prime_factor_180)
+    if b == 1:
+        return f"{sign}{a}"
     else:
-        result += f'/{product2}'
+        if latex:
+            return f"{sign}{Latex.frac.format(a=a, b=b)}"
+        else:
+            return f"{sign}{a}/{b}"
 
-    return result
 
-
-assert convert_degree_into_radian('180°') == pi
-assert convert_degree_into_radian('-45°') == f'-{pi}/4'
-assert convert_degree_into_radian('225°') == f'5{pi}/4'
+assert convert_degree_into_radian("-50^\\circ", latex=True) == "-\\frac{5\\pi}{18}"
+assert convert_degree_into_radian("-45°", latex=False) == f"-{pi}/4"
 
 
 def generate_number_without_value(interval: tuple = (-10, 10), *, forbidden_value: Union[int, list] = 0) -> int:
@@ -182,7 +186,7 @@ class QuestionsMCQ:
         self.children_object_name = self.children_object.__class__.__name__
         self.number_of_questions = self.get_number_of_questions()
 
-    def generate(self, shuffle_true_or_false_answer: bool = False, latex: bool = False) -> dict:
+    def generate(self, shuffle_true_or_false_answer: bool = False) -> dict:
         """
         Searches in the functions of the child object, all functions starting with the keyword "q_" and randomly picks a
         question. Then returns the result of this function. This makes it possible to make the link and generate a
@@ -202,7 +206,7 @@ class QuestionsMCQ:
         #  We randomly chose a question
         function_chosen = choice(questions_function)
         #  And call this function to get the question_data
-        response = function_chosen(latex=latex)
+        response = function_chosen()
 
         if shuffle_true_or_false_answer:
             #  If this is a True or False answer, there are only two elements in the suggested answer list
@@ -232,8 +236,9 @@ class QuestionsMCQ:
 
 
 class Algebra(QuestionsMCQ):
-    def __init__(self):
+    def __init__(self, latex: bool = False):
         super().__init__(self)
+        self.latex: bool = latex
 
     @staticmethod
     def format_value(coefficient: int, variable: str = "") -> str:
@@ -261,6 +266,7 @@ class Algebra(QuestionsMCQ):
         Actually, this is a kind of format_value() but for a whole equation
         """
         equation = []
+        #  only used if latex format is disable.
         exponents = ['⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹']
 
         for index, coefficient in enumerate(coefficients):
@@ -272,8 +278,11 @@ class Algebra(QuestionsMCQ):
                 variable = 'x'
             else:
                 variable = 'x'
-                for number in str(exponent):
-                    variable += exponents[int(number)]
+                if self.latex:
+                    variable += f"^{exponent}"
+                else:
+                    for number in str(exponent):
+                        variable += exponents[int(number)]
 
             equation.append(self.format_value(coefficient, variable))
 
@@ -291,7 +300,7 @@ class Algebra(QuestionsMCQ):
     #  Starting questions. I put many arguments in the function, but they are not required.
     #  This is only to manage the "settings" of a question.
     def q_calculate_antecedent(self, shuffle_the_equation: bool = True, *, a_interval: tuple = (-4, 4),
-                               c_interval: tuple = (-2, 2), x_interval: tuple = (-10, 10), **kwargs) -> dict:
+                               c_interval: tuple = (-2, 2), x_interval: tuple = (-10, 10)) -> dict:
         """
         Ask the user to found the antecedent of a first degree's function (it's the same as resolve an equation)
         """
@@ -299,11 +308,10 @@ class Algebra(QuestionsMCQ):
         #  Check if arguments are valid (in this case, if a_interval is equal to (0, 0))
         assert a_interval != (0, 0)
 
-        latex = kwargs.get('latex')
-        #  lf means latex_format (If latex is equal to true, we add $$ in math formula)
-        sentences = ['Quelle est la valeur de x dans {equation}={c} ?',
-                     'Quelle est la solution de {equation}={c} ?',
-                     'Donner l\'antécédent de {c} avec f(x)={equation}.']
+        #  l means latex_format (If latex is equal to true, we add $$ in math formula)
+        sentences = ['Quelle est la valeur de {l}x{l} dans {l}{equation}={c}{l} ?',
+                     'Quelle est la solution de {l}{equation}={c}{l} ?',
+                     'Donner l\'antécédent de {l}{c}{l} avec {l}f(x)={equation}{l}.']
         #  We randomly took a coefficient before the x
         a = generate_number_without_value(a_interval)
         x = generate_number_without_value(x_interval)
@@ -323,13 +331,13 @@ class Algebra(QuestionsMCQ):
         values = shuffle_a_list(values)
 
         equation = self.format_equation(a, b, shuffle_the_equation=shuffle_the_equation)
-        return {'question': choice(sentences).format(equation=equation, c=c),
-                'suggested_answer': values,
-                'index_answer': values.index(x)}
+        return {'question': choice(sentences).format(equation=equation, c=c, l="$" if self.latex else ""),
+                'index_answer': values.index(x),
+                'suggested_answer': [convert_value_to_latex(value) if self.latex else value for value in values]
+                }
 
     def q_calculate_image(self, shuffle_the_equation: bool = True, *, a_interval: tuple = (-4, 4),
-                          b_interval: tuple = (-6, 6), c_interval: tuple = (-10, 10), x_interval: tuple = (-2, 2),
-                          **kwargs):
+                          b_interval: tuple = (-6, 6), c_interval: tuple = (-10, 10), x_interval: tuple = (-2, 2)):
         """
         ask user to calculate the image of a number, in first or second degrees equations
         """
@@ -337,9 +345,9 @@ class Algebra(QuestionsMCQ):
         assert a_interval == (min(a_interval), max(a_interval)) and b_interval == (min(b_interval), max(b_interval))
         assert c_interval == (min(c_interval), max(c_interval)) and x_interval == (min(x_interval), max(x_interval))
 
-        sentences = ['Combien vaut g({x}) avec g(x)={equation} ?',
-                     'Calcule l\'image de {x} dans l\'équation {equation}=y.',
-                     'Donner l\'image de {x} avec f(x)={equation}.']
+        sentences = ['Combien vaut {l}g({x}){l} avec {l}g(x)={equation}{l} ?',
+                     'Calcule l\'image de {l}{x}{l} dans l\'équation {l}{equation}=y{l}.',
+                     'Donner l\'image de {l}{x}{l} avec {l}f(x)={equation}{l}.']
         #  I do that to have 1 in 2 a chance to get a first degree equation
         a = choice([0, generate_number_without_value(a_interval)])
         b = generate_number_without_value(b_interval)
@@ -375,19 +383,20 @@ class Algebra(QuestionsMCQ):
                 values.append(
                     int(generate_number_without_value((min_value - 4, max_value + 4), forbidden_value=values)))
         values = shuffle_a_list(values)
-        return {'question': choice(sentences).format(equation=equation, x=x),
-                'suggested_answer': values,
-                'index_answer': values.index(answer)}
+        return {'question': choice(sentences).format(equation=equation, x=x, l="$" if self.latex else ""),
+                'index_answer': values.index(answer),
+                'suggested_answer': [convert_value_to_latex(value) if self.latex else value for value in values]
+                }
 
-    def q_give_factorisation_form(self, shuffle_the_equation: bool = True, **kwargs) -> dict:
+    def q_give_factorisation_form(self, shuffle_the_equation: bool = True) -> dict:
         """
         Ask user to found which equation is the factorization form of the polynomial equation.
         E.g., -x²+5x-4 => -(x-1)(x-4)
         :param shuffle_the_equation: if we want to make this problem easier, we just have to turn off this arg
         :return: Dictionary with the classic keys
         """
-        sentences = ['Quelle est la forme factorisée du polynôme {equation}=y.',
-                     'Donner sous forme de produit f(x)={equation}.']
+        sentences = ['Quelle est la forme factorisée du polynôme {l}{equation}=y{l}.',
+                     'Donner sous forme de produit {l}f(x)={equation}{l}.']
         factored_equation = '{a}(x{x1})(x{x2})'
         a = generate_number_without_value((-2, 2))
         #  easy root of polynomial equation
@@ -422,22 +431,63 @@ class Algebra(QuestionsMCQ):
 
         values = shuffle_a_list(values)
 
-        return {'question': choice(sentences).format(equation=equation),
-                'suggested_answer': values,
-                'index_answer': values.index(answer)}
+        return {'question': choice(sentences).format(equation=equation, l="$" if self.latex else ""),
+                'index_answer': values.index(answer),
+                'suggested_answer': [convert_value_to_latex(value) if self.latex else value for value in values]
+                }
 
-    @staticmethod
-    def q_calcul_product(multiplication_tables_interval: tuple = (6, 12),
-                         odds_for_11: Optional[float] = 1 / 6, **kwargs) -> dict:
+    def q_calculate_discriminant(self, shuffle_the_equation: bool = True, a_interval: tuple = (-4, 4),
+                                 b_interval: tuple = (-6, 6), c_interval: tuple = (-4, 4)) -> dict:
+        """
+        Generates a question asking to calculate the discriminant of a quadratic equation.
+        E.g., -x² + 5x - 4 => Δ = 5² - 4×(-1)×(-4) = 9
+
+        :param shuffle_the_equation: If enabled, the equation may be rearranged to increase difficulty.
+        :param a_interval: Range of possible values for coefficient a, excluding 0.
+        :param b_interval: Range of possible values for coefficient b.
+        :param c_interval: Range of possible values for coefficient c.
+        :return: A dictionary containing:
+            - 'question': The formatted question statement.
+            - 'index_answer': The index of the correct answer in the list of choices.
+            - 'suggested_answer': A list of possible answers, formatted in LaTeX if enabled.
+        """
+        sentences = ['Combien vaut le discriminant de {l}{equation}{l}',
+                     'Calcule {l}{delta}{l} dans l\'équation {l}{equation}{l}',
+                     'Le {l}{delta}{l} est égal à combien dans l\'equation {l}{equation}{l}']
+
+        a = generate_number_without_value(a_interval, forbidden_value=0)
+        b = generate_number_without_value(b_interval)
+        c = generate_number_without_value(c_interval)
+        #  To review this because I'm not sure at all ...
+        equation = self.format_equation(a, b, c, shuffle_the_equation=shuffle_the_equation)
+
+        possible_interval = (-4 * max(max(a, c) * max(a, c), min(a, c) * min(a, c)),
+                             max(abs(min(b_interval)), abs(max(b_interval))) ** 2 + 4 * max(a_interval) * max(c_interval)
+                             )
+        answer = b**2 - 4 * a * c
+        values = [answer]
+        if answer != a**2 - 4 * b * c:
+            values.append(a**2 - 4 * b * c)
+        for _ in range(4 - len(values)):
+            values.append(generate_number_without_value(possible_interval, forbidden_value=values))
+
+        return {'question': choice(sentences).format(equation=equation, l="$" if self.latex else "",
+                                                     delta=Latex.delta if self.latex else "delta"),
+                'index_answer': values.index(answer),
+                'suggested_answer': [convert_value_to_latex(value) if self.latex else value for value in values]
+                }
+
+    def q_calcul_product(self, multiplication_tables_interval: tuple = (6, 12),
+                         odds_for_11: Optional[float] = 1 / 6) -> dict:
         """
         generates a question about multiplication tables, and offers several answers.
         I try to make the other answers consistent.
         :return: dictionary with the classic keys
         """
         assert odds_for_11 is None or 0 < odds_for_11 < 1
-        sentences = ['Quel est le produit de {n1} par {n2} ?',
-                     'Combien font {n1}x{n2} ?',
-                     '{n1}x{n2}=?']
+        sentences = ['Quel est le produit de {l}{n1}{l} par {l}{n2}{l} ?',
+                     'Combien font {l}{n1}{times}{n2}{l} ?',
+                     '{l}{n1}{times}{n2}=?{l}']
         table = range(min(multiplication_tables_interval), max(multiplication_tables_interval))
         #  There is a technique to calculate the 11 multiplication tables
         if 11 in table and odds_for_11 is not None:
@@ -473,9 +523,10 @@ class Algebra(QuestionsMCQ):
 
         values = shuffle_a_list(values)
 
-        return {'question': choice(sentences).format(n1=n1, n2=n2),
-                'suggested_answer': values,
-                'index_answer': values.index(answer)}
+        return {'question': choice(sentences).format(n1=n1, n2=n2, l="$" if self.latex else "", times=Latex.times if self.latex else "x"),
+                'index_answer': values.index(answer),
+                'suggested_answer': [convert_value_to_latex(value) if self.latex else value for value in values]
+                }
 
 
 class Arithmetic(QuestionsMCQ):
@@ -648,20 +699,20 @@ class Arithmetic(QuestionsMCQ):
 
 
 class Geometry(QuestionsMCQ):
-    prefix = {
-        'shapes': {
-            'pent': 5,
-            'hex': 6,
-            'oct': 8,
-            'dec': 10,
-        },
-        'units': ["kilo", "hecto", "deca", "", "deci", "centi", "milli"]}
-    geometric_shapes_with_their_angles = {'triangle': ('180°', convert_degree_into_radian('180°')),
-                                          'carré': ('360°', convert_degree_into_radian('360°')),
-                                          'pentagone': ('540°', convert_degree_into_radian('540°'))}
 
     def __init__(self):
         super().__init__(self)
+        self.prefix = {
+                'shapes': {
+                    'pent': 5,
+                    'hex': 6,
+                    'oct': 8,
+                    'dec': 10,
+                },
+                'units': ["kilo", "hecto", "deca", "", "deci", "centi", "milli"]}
+        self.geometric_shapes_with_their_angles = {'triangle': ('180°', convert_degree_into_radian('180°')),
+                                                   'carré': ('360°', convert_degree_into_radian('360°')),
+                                                   'pentagone': ('540°', convert_degree_into_radian('540°'))}
 
     @staticmethod
     def pythagorean_triplet(interval: tuple = (1, 13)) -> list:
@@ -1006,7 +1057,7 @@ class Trigonometry(QuestionsMCQ):
                 'index_answer': answer_index}
 
 
-def generate_mcq_question(subjects: Union[list[str], str] = '*', latex: bool = True) -> dict:
+def generate_mcq_question(subjects: Union[list[str], str] = '*', *, latex: bool = False) -> dict:
     """
     This is the main function that will be called everytime.
 
@@ -1022,10 +1073,10 @@ def generate_mcq_question(subjects: Union[list[str], str] = '*', latex: bool = T
     """
     #  I link "manually" word with the function that generate question about the math discipline.
     all_subjects = {
-        'Arithmetic': Arithmetic(),
-        'Trigonometry': Trigonometry(),
-        'Geometry': Geometry(),
-        'Algebra': Algebra()
+        #  'Arithmetic': Arithmetic(),
+        #  'Trigonometry': Trigonometry(),
+        #  'Geometry': Geometry(),
+        'Algebra': Algebra(latex=latex)
     }
     subjects = [subject for subject in subjects if subject in all_subjects]
     if not subjects:
@@ -1034,7 +1085,7 @@ def generate_mcq_question(subjects: Union[list[str], str] = '*', latex: bool = T
     random_subject = choices(subjects, weights=k)[0]
 
     #  returns the dictionary with the following keys "question", "suggested_answer", "index_answer" and "subject"
-    return all_subjects[random_subject].generate(latex=latex)
+    return all_subjects[random_subject].generate()
 
 
 def run(number_of_questions: Optional[int] = None, subjects: Union[list[str], str] = '*'):
@@ -1086,5 +1137,7 @@ def simple_test():
     #  print('Everything is correct.')
 
 
+"""
 if __name__ == '__main__':
     simple_test()
+"""
