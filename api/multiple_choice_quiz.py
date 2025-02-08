@@ -1052,7 +1052,7 @@ class Trigonometry(QuestionsMCQ):
         sentence = choice(sentences)
         return {'question': sentence.format(angle1=angle1, angle2=angle2, l="$" if self.latex else ""),
                 'index_answer': values.index(answer),
-                'suggested_answer': [convert_value_to_latex(value) if self.latex else value for value in values]}
+                'suggested_answer': values}
 
     def q_convert_value_into_degree_or_radian(self, **kwargs):
         """

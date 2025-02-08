@@ -13,6 +13,20 @@ const queryClient = new QueryClient({
     },
 });
 
+// Détection de la préférence de thème du système
+if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+  document.documentElement.setAttribute('data-bs-theme', 'dark');
+} else {
+  document.documentElement.setAttribute('data-bs-theme', 'light');
+}
+
+// Optionnel : mettre à jour dynamiquement si la préférence change
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+  const newTheme = e.matches ? "dark" : "light";
+  document.documentElement.setAttribute('data-bs-theme', newTheme);
+});
+
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>

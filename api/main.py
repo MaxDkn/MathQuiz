@@ -8,16 +8,16 @@ To Do List:
 - ui -
 Centrer la réponse
 """
-from fastapi.requests import Request
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import ORJSONResponse
 import logging
-from typing import Optional, List, Union
-from pydantic import BaseModel, Field
 import uvicorn
+from fastapi import FastAPI
+from fastapi.requests import Request
+from pydantic import BaseModel, Field
+from typing import Optional, List, Union
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import ORJSONResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 
 from multiple_choice_quiz import generate_mcq_question
 

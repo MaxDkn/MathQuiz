@@ -1,23 +1,29 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
+import "./index.css";
 
 // URL et constantes
 const API_URL = "/api";
 const ENDPOINT_URL = `${API_URL}/generate`;
 const subjects = ["Arithmetic", "Algebra", "Trigonometry", "Geometry"];
-const colors = ["#CEE5D0", "#F3F0D7", "#FED2AA", "#F0C1E1"];
+
+// Remplacer les couleurs en dur par des références aux variables CSS
+const colors = [
+  "var(--button-color-1)",
+  "var(--button-color-2)",
+  "var(--button-color-3)",
+  "var(--button-color-4)"
+];
 
 // Styles responsive pour la question et les réponses
 const answerButtonStyle = {
-  fontSize: "calc(1rem + 0.5vw)", // taille responsive pour les réponses
-  whiteSpace: "normal",           // permet le retour à la ligne s'il y a des espaces
-  wordBreak: "normal",            // casse les mots uniquement en présence d'espaces (par défaut)
-  // Vous pouvez ajouter textAlign ou d'autres styles si nécessaire
+  fontSize: "calc(1rem + 0.5vw)",
+  whiteSpace: "normal",
+  wordBreak: "normal",
 };
 
-
 const questionStyle = {
-  fontSize: "calc(1rem + 1vw)",    // taille responsive plus grande pour la question
+  fontSize: "calc(1rem + 1vw)",
 };
 
 // Composant pour afficher le LaTeX avec KaTeX
@@ -32,7 +38,12 @@ const MathComponent = ({ latex }) => {
     }
   }, [latex]);
 
-  return <span ref={mathRef}></span>;
+  return (
+    <span 
+      ref={mathRef} 
+      style={{ whiteSpace: "nowrap", display: "inline-block" }} 
+    ></span>
+  );
 };
 
 // Fonction qui découpe le texte sur les délimiteurs $...$
@@ -93,10 +104,9 @@ function App() {
   function validAnswer(index) {
     if (index !== data.index_answer) {
       setPopupMessage(
-          <>
-            Vous vous êtes trompé, la bonne réponse était{" "}
-            {parseMathText(data.suggested_answer[data.index_answer])}
-          </>
+        <>
+          Vous vous êtes trompé, la bonne réponse était {parseMathText(data.suggested_answer[data.index_answer])}
+        </>
       );
       setShowPopup(true);
     } else {
@@ -115,128 +125,127 @@ function App() {
 
   if (isLoading || isError) {
     return (
-        <div style={{ position: "relative", height: "100vh", width: "100vw" }}>
-          {isError && (
-              <div
-                  style={{
-                    position: "absolute",
-                    top: "10px", // Le message est placé en haut (par exemple à 20% de la hauteur)
-                    width: "100%",
-                    textAlign: "center",
-                    padding: "0 10px",
-                    zIndex: 10,
-                  }}
-              >
-                <div className="alert alert-danger" role="alert">
-                  Erreur dans la récupération des données, l'API n'est pas connectée au frontend.
-                </div>
-              </div>
-          )}
+      <div style={{ position: "relative", height: "100vh", width: "100vw" }}>
+        {isError && (
           <div
-              style={{
-                position: "absolute",
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-                zIndex: 5,
-              }}
+            style={{
+              position: "absolute",
+              top: "10px",
+              width: "100%",
+              textAlign: "center",
+              padding: "0 10px",
+              zIndex: 10,
+            }}
           >
-            <div className="spinner-border" role="status" />
+            <div className="alert alert-danger" role="alert">
+              Erreur dans la récupération des données, l'API n'est pas connectée au frontend.
+            </div>
           </div>
+        )}
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            zIndex: 5,
+          }}
+        >
+          <div className="spinner-border" role="status" />
         </div>
+      </div>
     );
   }
 
   return (
-      // Conteneur principal en flex-column occupant toute la hauteur de la fenêtre
-      <div className="App container" style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-        {/* Zone de la question */}
-        <div
-            className="question text-center"
-            style={{
-              border: "2px solid black",
-              padding: "10px",
-              margin: "10px",
-              fontWeight: "bold",
-              backgroundColor: "#f9f9f9",
-              ...questionStyle,
-            }}
+    <div className="App container" style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+      <div
+        className="question text-center"
+        style={{
+          border: "2px solid var(--question-border)",
+          padding: "10px",
+          margin: "10px",
+          fontWeight: "bold",
+          backgroundColor: "var(--question-bg)",
+          color: "var(--question-text)",
+          ...questionStyle,
+        }}
         >
-          {parseMathText(data.question)}
-        </div>
+        {parseMathText(data.question)}
+      </div>
 
-        {/* Zone des réponses qui prend l'espace restant */}
-        <div className="answers d-flex flex-column" style={{ flex: 1, margin: "20px" }}>
-          {data.suggested_answer.map((item, index) =>
-              index % 2 === 0 ? (
-                  // Chaque ligne (row) partage équitablement la hauteur
-                  <div className="row d-flex" style={{ flex: 1 }} key={index}>
-                    <div className="col p-2" style={{ flex: 1 }}>
-                      <button
-                          className="btn w-100 h-100"
-                          onClick={() => validAnswer(index)}
-                          style={{
-                            backgroundColor: shuffledColors[index % shuffledColors.length],
-                            ...answerButtonStyle,
-                          }}
-                      >
-                        {parseMathText(item)}
-                      </button>
-                    </div>
-                    {data.suggested_answer[index + 1] && (
-                        <div className="col p-2" style={{ flex: 1 }}>
-                          <button
-                              className="btn w-100 h-100"
-                              onClick={() => validAnswer(index + 1)}
-                              style={{
-                                backgroundColor: shuffledColors[(index + 1) % shuffledColors.length],
-                                ...answerButtonStyle,
-                              }}
-                          >
-                            {parseMathText(data.suggested_answer[index + 1])}
-                          </button>
-                        </div>
-                    )}
-                  </div>
-              ) : null
-          )}
-        </div>
-
-        {/* Modal Popup */}
-        {showPopup && (
-            <div
-                onClick={closePopup}
-                style={{
-                  position: "fixed",
-                  top: 0,
-                  left: 0,
-                  width: "100vw",
-                  height: "100vh",
-                  backgroundColor: "rgba(142, 22, 22, 0.6)",
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  zIndex: 1050,
-                  cursor: "pointer",
-                }}
-            >
-              <div
+      <div className="answers d-flex flex-column" style={{ flex: 1, margin: "20px" }}>
+        {data.suggested_answer.map((item, index) =>
+          index % 2 === 0 ? (
+            <div className="row d-flex" style={{ flex: 1 }} key={index}>
+              <div className="col p-2" style={{ flex: 1 }}>
+                <button
+                  className="btn w-100 h-100"
+                  onClick={() => validAnswer(index)}
                   style={{
-                    backgroundColor: "white",
-                    padding: "20px",
-                    borderRadius: "10px",
-                    textAlign: "center",
-                    boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
-                    maxWidth: "500px",
-                    width: "80%",
+                    backgroundColor: shuffledColors[index % shuffledColors.length],
+                    color: "var(--question-text)",
+                    ...answerButtonStyle,
                   }}
-              >
-                <h5 style={{ color: "red", marginBottom: "15px" }}>Erreur de Réponse</h5>
-                <p>{popupMessage}</p>
+                >
+                  {parseMathText(item)}
+                </button>
               </div>
+              {data.suggested_answer[index + 1] && (
+                <div className="col p-2" style={{ flex: 1 }}>
+                  <button
+                    className="btn w-100 h-100"
+                    onClick={() => validAnswer(index + 1)}
+                    style={{
+                      backgroundColor: shuffledColors[(index + 1) % shuffledColors.length],
+                      color: "var(--question-text)",
+                      ...answerButtonStyle,
+                    }}
+                  >
+                    {parseMathText(data.suggested_answer[index + 1])}
+                  </button>
+                </div>
+              )}
             </div>
+          ) : null
         )}
       </div>
+
+      {showPopup && (
+      <div
+        onClick={closePopup}
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100vw",
+          height: "100vh",
+          backgroundColor: "rgba(142, 22, 22, 0.6)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          zIndex: 1050,
+          cursor: "pointer",
+        }}
+      >
+        <div
+          style={{
+            backgroundColor: "var(--popup-bg)",
+            color: "var(--popup-text)",
+            padding: "20px",
+            borderRadius: "10px",
+            textAlign: "center",
+            boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
+            maxWidth: "500px",
+            width: "80%",
+          }}
+        >
+          <h5 style={{ color: "red", marginBottom: "15px" }}>Erreur de Réponse</h5>
+          <p>{popupMessage}</p>
+        </div>
+      </div>
+    )}
+    </div>
   );
 }
 
