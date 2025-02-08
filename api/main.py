@@ -1,6 +1,9 @@
 """
 to activate virtual environment on Windows:
 > Set-ExecutionPolicy Unrestricted -Scope Process
+To Do List:
+- ui -
+Centrer la réponse
 """
 from fastapi.requests import Request
 from fastapi import FastAPI

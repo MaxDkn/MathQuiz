@@ -48,6 +48,8 @@ class Latex:
     degree = '^\\circ'
     times = "\\times"
     delta = "\\Delta"
+    in_set = "\\in"
+    Z = "\\mathbb{Z}"
 
 
 def decomposition_prime_factor(n: int) -> list[int]:
@@ -202,11 +204,11 @@ class QuestionsMCQ:
                 #  in the list where we'll randomly choose a function and called it
                 questions_function.append(getattr(self.children_object, function_name))
         if not questions_function:
-            raise f"No function that begin by the keyword \"q_\" in the {self.children_object_name} object."
+            raise ValueError(f"No function that begin by the keyword \"q_\" in the {self.children_object_name} object.")
         #  We randomly chose a question
         function_chosen = choice(questions_function)
         #  And call this function to get the question_data
-        response = function_chosen()
+        response: dict = function_chosen()
 
         if shuffle_true_or_false_answer:
             #  If this is a True or False answer, there are only two elements in the suggested answer list
@@ -217,6 +219,7 @@ class QuestionsMCQ:
 
         #  Then we add the subject key
         response['subject'] = self.children_object_name
+        response['question_name'] = function_chosen.__name__
 
         return response
 
@@ -523,15 +526,17 @@ class Algebra(QuestionsMCQ):
 
         values = shuffle_a_list(values)
 
-        return {'question': choice(sentences).format(n1=n1, n2=n2, l="$" if self.latex else "", times=Latex.times if self.latex else "x"),
+        return {'question': choice(sentences).format(n1=n1, n2=n2, l="$" if self.latex else "",
+                                                     times=Latex.times if self.latex else "x"),
                 'index_answer': values.index(answer),
                 'suggested_answer': [convert_value_to_latex(value) if self.latex else value for value in values]
                 }
 
 
 class Arithmetic(QuestionsMCQ):
-    def __init__(self):
+    def __init__(self, latex: bool = False):
         super().__init__(self)
+        self.latex = latex
 
     @staticmethod
     def all_prime_number_of_an_interval(interval: tuple = (5, 50)) -> list[int]:
@@ -564,14 +569,13 @@ class Arithmetic(QuestionsMCQ):
 
         return prime_numbers
 
-    @staticmethod
-    def q_perfect_square(interval: tuple = (25, 196), **kwargs) -> dict:
+    def q_perfect_square(self, interval: tuple = (25, 196)) -> dict:
         """
         ask if a number is a perfect square or not, the answer is True or False.
         """
-        sentences = ['Le nombre {number_generated} est-il un carré parfait ?',
-                     '{number_generated} est-il le carré d\'un nombre entier ?',
-                     'Peut-on écrire {number_generated} comme k² avec k un entier ?']
+        sentences = ['Le nombre {l}{number_generated}{l} est-il un carré parfait ?',
+                     '{l}{number_generated}{l} est-il le carré d\'un nombre entier ?',
+                     'Peut-on écrire {l}{number_generated}{l} comme {l}k{sqrt}{l} avec {l}k {definition_domain}{l} ?']
         #  list of the perfect square in the interval
         perfect_square = [number ** 2 for number in range(floor(min(interval) ** 0.5), ceil(max(interval) ** 0.5) + 1)]
         #  I always shuffle but actually it is not necessary
@@ -586,17 +590,20 @@ class Arithmetic(QuestionsMCQ):
             #  else we chose a number in this interval that is not a perfect square
             number_generated = generate_number_without_value(interval, forbidden_value=perfect_square)
 
-        return {'question': choice(sentences).format(number_generated=number_generated),
+        return {'question': choice(sentences).format(number_generated=number_generated, l="$" if self.latex else "",
+                                                     sqrt='^2' if self.latex else "²",
+                                                     definition_domain=f"{Latex.in_set} {Latex.Z}" if self.latex
+                                                     else "un entier"),
                 'suggested_answer': values,
                 'index_answer': values.index(is_perfect_square)}
 
-    def q_prime_number(self, interval: tuple = (10, 40), **kwargs) -> dict:
+    def q_prime_number(self, interval: tuple = (10, 40)) -> dict:
         """
         ask if a number is a prime number or not.
         """
-        sentences = ['{number_generated} est-il divisible uniquement par 1 et lui-même ?',
-                     'Peut-on dire que {number_generated} est un nombre premier ?',
-                     'Est-ce que {number_generated} est considéré comme un nombre premier ?']
+        sentences = ['{l}{number_generated}{l} est-il divisible uniquement par {l}1{l} et lui-même ?',
+                     'Peut-on dire que {l}{number_generated}{l} est un nombre premier ?',
+                     'Est-ce que {l}{number_generated}{l} est considéré comme un nombre premier ?']
 
         prime_number = self.all_prime_number_of_an_interval(interval)
         values = [True, False]
@@ -609,13 +616,12 @@ class Arithmetic(QuestionsMCQ):
             while number_generated % 2 == 0 and number_generated != 2:
                 number_generated = generate_number_without_value(interval, forbidden_value=prime_number)
 
-        return {'question': choice(sentences).format(number_generated=number_generated),
+        return {'question': choice(sentences).format(number_generated=number_generated, l="$" if self.latex else ""),
                 'suggested_answer': values,
                 'index_answer': values.index(is_prime)}
 
-    @staticmethod
-    def q_greatest_lower_common_divisor_multiple(interval: tuple = (20, 40),
-                                                 solution_interval: tuple = (2, 6), **kwargs) -> dict:
+    def q_greatest_lower_common_divisor_multiple(self, interval: tuple = (20, 40),
+                                                 solution_interval: tuple = (2, 6)) -> dict:
         """
         ask the greatest common divisor or the lower common multiple of two numbers and suggest several solutions.
         :param interval: interval of the two numbers
@@ -624,9 +630,9 @@ class Arithmetic(QuestionsMCQ):
         """
         #  Check if the interval is a tuple of two numbers, sorted.
         assert interval == (min(interval), max(interval))
-        sentences = ['Trouve le {gcd_or_lcm} entre {n1} et {n2}.',
-                     'Calcule le {gcd_or_lcm} des nombres {n1} et {n2}.',
-                     'Quel est le {gcd_or_lcm} de {n1} et {n2} ?']
+        sentences = ['Trouve le {gcd_or_lcm} entre {l}{n1}{l} et {l}{n2}{l}.',
+                     'Calcule le {gcd_or_lcm} des nombres {l}{n1}{l} et {l}{n2}{l}.',
+                     'Quel est le {gcd_or_lcm} de {l}{n1}{l} et {l}{n2}{l} ?']
         gcd_or_lcm = choice([[choice(['plus grand diviseur commmun', 'PGCD']), gcd],
                              [choice(['plus petit mutliple commmun', 'PPCM']), lcm]])
         k = generate_number_without_value(solution_interval)  # can't take 0, you will see why
@@ -651,13 +657,14 @@ class Arithmetic(QuestionsMCQ):
 
         values = shuffle_a_list(values)
 
-        return {'question': choice(sentences).format(gcd_or_lcm=gcd_or_lcm[0], n1=n1, n2=n2),
-                'suggested_answer': values,
-                'index_answer': values.index(answer)}
+        return {'question': choice(sentences).format(gcd_or_lcm=gcd_or_lcm[0], n1=n1, n2=n2,
+                                                     l="$" if self.latex else ""),
+                'index_answer': values.index(answer),
+                'suggested_answer': [convert_value_to_latex(value) if self.latex else value for value in values]
+                }
 
-    @staticmethod
-    def q_is_divisible_by_a_number(interval: tuple = (100, 10_000),
-                                   divisors: tuple = (3, 5, 6, 7, 10, 15), **kwargs) -> dict:
+    def q_is_divisible_by_a_number(self, interval: tuple = (100, 10_000),
+                                   divisors: tuple = (3, 5, 6, 7, 9, 10, 15)) -> dict:
         """
         ask if a number is divisible by another one, using the divisible rules with specific numbers.
         The rule for the number 7 is not famous, but I know the trick :
@@ -676,9 +683,9 @@ class Arithmetic(QuestionsMCQ):
         :param divisors: the numbers for which we can ask if a number is divisible by that one
         :return:
         """
-        sentences = ['Le nombre {k} divise-t-il {final_number} ?',
-                     '{k} peut-il diviser {final_number} sans laisser de reste ?',
-                     '{final_number} est-il divisible par {k} ?']
+        sentences = ['Le nombre {l}{k}{l} divise-t-il {l}{final_number}{l} ?',
+                     '{l}{k}{l} peut-il diviser {l}{final_number}{l} sans laisser de reste ?',
+                     '{l}{final_number}{l} est-il divisible par {l}{k}{l} ?']
 
         values = [True, False]
         is_divisible = choice(values)
@@ -693,15 +700,40 @@ class Arithmetic(QuestionsMCQ):
             while final_number % k == 0:
                 final_number = randint(min(interval), max(interval))
 
-        return {'question': choice(sentences).format(final_number=final_number, k=k),
+        return {'question': choice(sentences).format(final_number=final_number, k=k, l="$" if self.latex else ""),
                 'suggested_answer': values,
                 'index_answer': values.index(is_divisible)}
+
+    def q_convert_bin_to_dec(self, interval: tuple = (5, 32)) -> dict:
+        """
+        Ask to convert a binary number to a decimal number
+        :param interval: the interval of the values that can be asked
+        :return:
+        """
+        sentences = ["Transforme le nombre {l}{number}{base}{l}{base_text} en nombre décimal.",
+                     "Exprime {l}{number}{base}{l}{base_text} en base {l}10{l}.",
+                     "Convertis {l}{number}{l} du binaire vers le décimal."]
+        value = randint(*interval)
+        
+        values = [value]
+        for _ in range(4 - len(values)):
+            values.append(generate_number_without_value(interval, forbidden_value=values))
+        answer = str(bin(value))[2:]
+
+        values = shuffle_a_list(values)
+
+        return {'question': choice(sentences).format(number=answer, l="$" if self.latex else "",
+                                                     base="_2" if self.latex else "",
+                                                     base_text="" if self.latex else " binaire"),
+                'index_answer': values.index(value),
+                'suggested_answer': [convert_value_to_latex(value) if self.latex else value for value in values]}
 
 
 class Geometry(QuestionsMCQ):
 
-    def __init__(self):
+    def __init__(self, latex: bool = False):
         super().__init__(self)
+        self.latex = latex
         self.prefix = {
                 'shapes': {
                     'pent': 5,
@@ -710,9 +742,12 @@ class Geometry(QuestionsMCQ):
                     'dec': 10,
                 },
                 'units': ["kilo", "hecto", "deca", "", "deci", "centi", "milli"]}
-        self.geometric_shapes_with_their_angles = {'triangle': ('180°', convert_degree_into_radian('180°')),
-                                                   'carré': ('360°', convert_degree_into_radian('360°')),
-                                                   'pentagone': ('540°', convert_degree_into_radian('540°'))}
+        self.degree = f"{Latex.degree}" if latex else "°"
+        self.geometric_shapes_with_their_angles = {
+            'triangle': (f'180{self.degree}', convert_degree_into_radian(f'180{self.degree}', latex=latex)),
+            'carré': (f'360{self.degree}', convert_degree_into_radian(f'360{self.degree}', latex=latex)),
+            'pentagone': (f'540{self.degree}', convert_degree_into_radian(f'540{self.degree}', latex=latex))
+        }
 
     @staticmethod
     def pythagorean_triplet(interval: tuple = (1, 13)) -> list:
@@ -768,10 +803,10 @@ class Geometry(QuestionsMCQ):
         delta = self.prefix['units'].index(target_prefix) - self.prefix['units'].index(source_prefix)
         return source_value * 10 ** delta
 
-    def q_how_many_side(self, **kwargs) -> dict:
-        sentences = ['Combien de côté un {polygone_prefix}agone possède t\'il ?',
-                     'Un {polygone_prefix}agone, c\'est un polygone à comien de coté ?',
-                     'Nombre de coté d\'un {polygone_prefix}agone ?']
+    def q_how_many_side(self) -> dict:
+        sentences = ['Combien de côté un {l}{polygone_prefix}agone{l} possède t\'il ?',
+                     'Un {l}{polygone_prefix}agone{l}, c\'est un polygone à comien de coté ?',
+                     'Nombre de coté d\'un {l}{polygone_prefix}agone{l} ?']
 
         prefix = choice(list(self.prefix['shapes']))
         answer = self.prefix['shapes'][prefix]
@@ -784,17 +819,17 @@ class Geometry(QuestionsMCQ):
 
         values = shuffle_a_list(values)
 
-        return {'question': choice(sentences).format(polygone_prefix=prefix),
-                'suggested_answer': values,
-                'index_answer': values.index(answer)}
+        return {'question': choice(sentences).format(polygone_prefix=prefix, l="$" if self.latex else ""),
+                'index_answer': values.index(answer),
+                'suggested_answer': [convert_value_to_latex(value) if self.latex else value for value in values]}
 
-    def q_angles_sum(self, **kwargs) -> dict:
+    def q_angles_sum(self) -> dict:
         """
          Creates a multiple-choice question about the sum of angles of a geometric shape.
         """
-        sentences = ['Quelle est la sommes des angles d\'un {shape}',
-                     'Quel est le résultat de l’addition des angles d’un {shape} ?',
-                     'Que vaut la somme des angles d’un {shape} ?']
+        sentences = ['Quelle est la sommes des angles d\'un {l}{shape}{l}',
+                     'Quel est le résultat de l’addition des angles d’un {l}{shape}{l} ?',
+                     'Que vaut la somme des angles d’un {l}{shape}{l} ?']
         shape_chosen = choice(list(self.geometric_shapes_with_their_angles))
         answer = choice(self.geometric_shapes_with_their_angles[shape_chosen])
 
@@ -812,11 +847,12 @@ class Geometry(QuestionsMCQ):
 
         values = shuffle_a_list(values)
 
-        return {'question': choice(sentences).format(shape=shape_chosen),
-                'suggested_answer': values,
-                'index_answer': values.index(answer)}
+        return {'question': choice(sentences).format(shape=shape_chosen, l="$" if self.latex else ""),
+                'index_answer': values.index(answer),
+                'suggested_answer': [convert_value_to_latex(value) if self.latex else value for value in values]
+                }
 
-    def q_triangle_nature(self, interval: tuple = (3, 10), shuffle_answers: bool = True, **kwargs) -> dict:
+    def q_triangle_nature(self, interval: tuple = (3, 10), shuffle_answers: bool = True) -> dict:
         """
         Generates a multiple-choice question to determine the type of triangle based on its sides.
 
@@ -824,9 +860,9 @@ class Geometry(QuestionsMCQ):
         :param shuffle_answers: If True, shuffle the order of the suggested answers (default is True).
         """
         assert interval == (min(interval), max(interval))
-        sentences = ['Détermine la nature du triangle aux côtés {a}, {b}, et {c}.',
-                     'À quelle catégorie appartient le triangle avec des côtés de {a}, {b} et {c} ?',
-                     'Identifie la nature du triangle ayant pour côtés {a}, {b}, et {c}.']
+        sentences = ['Détermine la nature du triangle aux côtés {l}{a}{l}, {l}{b}{l}, et {l}{c}{l}.',
+                     'À quelle catégorie appartient le triangle avec des côtés de {l}{a}{l}, {l}{b}{l} et {l}{c}{l} ?',
+                     'Identifie la nature du triangle ayant pour côtés {l}{a}{l}, {l}{b}{l}, et {l}{c}{l}.']
         values = ['rectangle', 'isocèle', 'équilatéral', 'quelconque']
         if shuffle_answers:
             values = shuffle_a_list(values)
@@ -855,18 +891,18 @@ class Geometry(QuestionsMCQ):
 
         a, b, c = shuffle_a_list(side)
 
-        return {'question': choice(sentences).format(a=a, b=b, c=c),
-                'suggested_answer': values,
-                'index_answer': values.index(answer)}
+        return {'question': choice(sentences).format(a=a, b=b, c=c, l="$" if self.latex else ""),
+                'index_answer': values.index(answer),
+                'suggested_answer': [convert_value_to_latex(value) if self.latex else value for value in values]}
 
-    def q_convert_unit(self, **kwargs) -> dict:
+    def q_convert_unit(self) -> dict:
         """
         generates a question for converting a value between units with proper formatting.
         """
         unit_range = (0, len(self.prefix['units']) - 1)
-        sentences = ['Convertis {source_value} {source_unit} en {target_unit}.',
-                     '{source_value} {source_unit} font combien de {target_unit} ?',
-                     'Transforme {source_value} {source_unit} en {target_unit}.']
+        sentences = ['Convertis {l}{source_value}{l} {l}{source_unit}{l} en {l}{target_unit}{l}.',
+                     '{l}{source_value}{l} {l}{source_unit}{l} font combien de {l}{target_unit}{l} ?',
+                     'Transforme {l}{source_value}{l} {l}{source_unit}{l} en {l}{target_unit}{l}.']
         unit = choice(['grammes', 'litres', 'mètres'])
 
         source_value = round(random() * 10, 1)
@@ -886,22 +922,25 @@ class Geometry(QuestionsMCQ):
         #  we've got all prefix indexes to generate new values, so now we transform index into values with their units.
         source_prefix = self.prefix['units'][source_unit_index]
         answer_prefix = self.prefix['units'][answer_index]
-        answer = (self.format_number(self.convert_value_unit(source_value, source_prefix, answer_prefix))
-                  + f" {answer_prefix}{unit}")
+        latex = '$' if self.latex else ''
+
+        answer = (f"{latex}{self.format_number(self.convert_value_unit(source_value, source_prefix, answer_prefix))}{latex}"
+                  + f" {latex}{answer_prefix}{unit}{latex}")
         values = [answer]
         for fake_value_index in unit_index_of_fake_value:
             fake_target_prefix = self.prefix['units'][fake_value_index]
             fake_value = self.convert_value_unit(source_value, source_prefix, fake_target_prefix)
-            fake_value = self.format_number(fake_value) + f" {answer_prefix}{unit}"
+            latex = '$' if self.latex else ''
+            fake_value = f"{latex}{self.format_number(fake_value)}{latex}" + f" {latex}{answer_prefix}{unit}{latex}"
             values.append(fake_value)
 
         values = shuffle_a_list(values)
         source_unit = source_prefix + unit
         target_unit = answer_prefix + unit
         return {'question': choice(sentences).format(source_value=source_value, source_unit=source_unit,
-                                                     target_unit=target_unit),
-                'suggested_answer': values,
-                'index_answer': values.index(answer)}
+                                                     target_unit=target_unit, l="$" if self.latex else ""),
+                'index_answer': values.index(answer),
+                'suggested_answer': values}
 
 
 class Trigonometry(QuestionsMCQ):
@@ -914,9 +953,9 @@ class Trigonometry(QuestionsMCQ):
     #  "base" angle that we are supposed to know and from which, we can find all the others
     angles_base = ['0°', '30°', '45°', '60°']
 
-    def __init__(self):
+    def __init__(self, latex: bool = False):
         super().__init__(self)
-
+        self.latex = latex
         self.angles = self.get_extended_angles(start=-4, stop=4)
 
     def get_extended_angles(self, *, start: int = -2, stop: int = 2) -> list[str]:
@@ -1073,9 +1112,9 @@ def generate_mcq_question(subjects: Union[list[str], str] = '*', *, latex: bool 
     """
     #  I link "manually" word with the function that generate question about the math discipline.
     all_subjects = {
-        #  'Arithmetic': Arithmetic(),
-        #  'Trigonometry': Trigonometry(),
-        #  'Geometry': Geometry(),
+        'Arithmetic': Arithmetic(latex=latex),
+        'Trigonometry': Trigonometry(),
+        'Geometry': Geometry(latex=latex),
         'Algebra': Algebra(latex=latex)
     }
     subjects = [subject for subject in subjects if subject in all_subjects]
@@ -1125,19 +1164,16 @@ def run(number_of_questions: Optional[int] = None, subjects: Union[list[str], st
 
 
 def simple_test():
-    for _ in tqdm(range(500)):
-        data = Trigonometry().q_found_value()
+    stats = {}
+    for _ in tqdm(range(15_000)):
+        data = generate_mcq_question("*", latex=True)
         #  print(data)
-        try:
-            assert (data.get('question') is not None and data.get('suggested_answer') is not None and
-                    data.get('index_answer') is not None)
-        except AssertionError:
-            print(data)
-            exit()
+        for important_key in ["question", "suggested_answer", "index_answer"]:
+            if important_key not in data.keys():
+                raise ValueError(f"The '{important_key}' key is missing in the {data['question_name']} function.")
+
     #  print('Everything is correct.')
 
 
-"""
 if __name__ == '__main__':
     simple_test()
-"""
