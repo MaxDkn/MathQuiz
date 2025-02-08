@@ -50,6 +50,8 @@ class Latex:
     delta = "\\Delta"
     in_set = "\\in"
     Z = "\\mathbb{Z}"
+    cos = "\\cos"
+    sin = "\\sin"
 
 
 def decomposition_prime_factor(n: int) -> list[int]:
@@ -944,19 +946,21 @@ class Geometry(QuestionsMCQ):
 
 
 class Trigonometry(QuestionsMCQ):
-    values_into_str = {0: "0",
-                       0.5: "1/2",
-                       0.707: f'{sqrt.format(number=2)}/2',
-                       0.866: f'{sqrt.format(number=3)}/2',
-                       1: '1'}
-
-    #  "base" angle that we are supposed to know and from which, we can find all the others
-    angles_base = ['0°', '30°', '45°', '60°']
-
     def __init__(self, latex: bool = False):
         super().__init__(self)
         self.latex = latex
+        self.values_into_str = {0: "0",
+                       0.5: f"{Latex.frac.format(a=1, b=2)}" if self.latex else "1/2",
+                       0.707: f"{Latex.frac.format(a=Latex.sqrt.format(n=2), b=2)}" if self.latex else f'{sqrt.format(number=2)}/2',
+                       0.866: f"{Latex.frac.format(a=Latex.sqrt.format(n=3), b=2)}" if self.latex else f'{sqrt.format(number=3)}/2',
+                       1: '1'}
+        
+
+        #  "base" angle that we are supposed to know and from which, we can find all the others
+        self.degree = f"{Latex.degree}" if latex else "°"
+        self.angles_base = [f'0{self.degree}', f'30{self.degree}', f'45{self.degree}', f'60{self.degree}']
         self.angles = self.get_extended_angles(start=-4, stop=4)
+
 
     def get_extended_angles(self, *, start: int = -2, stop: int = 2) -> list[str]:
         """
@@ -972,39 +976,38 @@ class Trigonometry(QuestionsMCQ):
                 new_angle: str = self.add_angles(value, 90 * i)
                 new_angles.append(new_angle)
 
-        new_angles.append(f'{90 * stop}°')
+        new_angles.append(f'{90 * stop}{self.degree}')
         return new_angles
 
-    @staticmethod
-    def add_angles(angle_degree: str, delta_in_degree: int):
-        value = int(angle_degree[:-1])
+    def add_angles(self, angle_degree: str, delta_in_degree: int):
+        value = int(angle_degree[:-len(self.degree)])
         value += delta_in_degree
-        value = str(value) + '°'
+        value = str(value) + self.degree
         return value
 
-    def q_found_value(self, **kwargs) -> dict:
+    def q_found_value(self) -> dict:
         """
         Generates a question about the value of a trigonometric function for a given angle.
         """
-        sentences = ['Quelle est la valeur de {trigo_function}({value}) ?',
-                     'Quelle valeur doit-on attribuer à {trigo_function}({value}) ?',
-                     'Quel est le résultat de {trigo_function}({value}) dans l’unité cercle ?']
+        sentences = ['Quelle est la valeur de {l}{trigo_function}({value}){l} ?',
+                     'Quelle valeur doit-on attribuer à {l}{trigo_function}({value}){l} ?',
+                     'Quel est le résultat de {l}{trigo_function}({value}){l} dans l’unité cercle ?']
         # Select a trigonometric function and its string representation
-        trigo_function = choice([(cos, 'cos'), (sin, 'sin')])
+        trigo_function = choice([(cos, Latex.cos if self.latex else 'cos'), (sin, Latex.sin if self.latex else 'sin')])
         value = choice(self.angles)
-        answer = round(trigo_function[0](radians(int(value[:-1]))), 3)
+        answer = round(trigo_function[0](radians(int(value[:-len(self.degree)]))), 3)
         if answer < 0:
             answer = "-" + self.values_into_str[abs(answer)]
         else:
             answer = self.values_into_str[answer]
         #  can ask in radian
         if choice([True, False]):
-            value = convert_degree_into_radian(value)
+            value = convert_degree_into_radian(value, latex=self.latex)
 
         values = [answer]
         while len(values) < 4:
             fake_value = choice(self.angles)
-            fake_value = round(trigo_function[0](radians(int(fake_value[:-1]))), 3)
+            fake_value = round(trigo_function[0](radians(int(fake_value[:-len(self.degree)]))), 3)
             if fake_value < 0:
                 fake_value = "-" + self.values_into_str[abs(fake_value)]
             else:
@@ -1013,17 +1016,17 @@ class Trigonometry(QuestionsMCQ):
                 continue
             values.append(fake_value)
 
-        return {'question': choice(sentences).format(trigo_function=trigo_function[1], value=value),
-                'suggested_answer': values,
-                'index_answer': values.index(answer)}
+        return {'question': choice(sentences).format(trigo_function=trigo_function[1], value=value, l="$" if self.latex else ""),
+                'index_answer': values.index(answer),
+                'suggested_answer': [convert_value_to_latex(value) if self.latex else value for value in values]}
 
-    def q_is_the_same_value(self, **kwargs):
+    def q_is_the_same_value(self) -> dict:
         """
             Generates a question about whether two angles are equivalent on the unit circle.
         """
-        sentences = ['{angle1} est-il confondu avec {angle2} dans le cerle trigonométrique ?',
-                     '{angle1} et {angle2} ont-ils la même position sur le cercle trigo ?',
-                     'Peut-on superposer {angle1} et {angle2} dans le cercle trigo d\'unité 1 ?']
+        sentences = ['{l}{angle1}{l} est-il confondu avec {l}{angle2}{l} dans le cerle trigonométrique ?',
+                     '{l}{angle1}{l} et {l}{angle2}{l} ont-ils la même position sur le cercle trigo ?',
+                     'Peut-on superposer {l}{angle1}{l} et {l}{angle2}{l} dans le cercle trigo d\'unité 1 ?']
         angle1 = choice(self.angles)
         values = [True, False]
         answer = choice(values)
@@ -1041,15 +1044,15 @@ class Trigonometry(QuestionsMCQ):
         shuffle(angles)
         angle1, angle2 = angles
         if choice([True, False]):
-            angle1 = convert_degree_into_radian(angle1)
+            angle1 = convert_degree_into_radian(angle1, latex=self.latex)
 
         if choice([True, False]):
-            angle2 = convert_degree_into_radian(angle2)
+            angle2 = convert_degree_into_radian(angle2, latex=self.latex)
 
         sentence = choice(sentences)
-        return {'question': sentence.format(angle1=angle1, angle2=angle2),
-                'suggested_answer': values,
-                'index_answer': values.index(answer)}
+        return {'question': sentence.format(angle1=angle1, angle2=angle2, l="$" if self.latex else ""),
+                'index_answer': values.index(answer),
+                'suggested_answer': [convert_value_to_latex(value) if self.latex else value for value in values]}
 
     def q_convert_value_into_degree_or_radian(self, **kwargs):
         """
@@ -1062,15 +1065,15 @@ class Trigonometry(QuestionsMCQ):
         - Convert the remaining values into the appropriate unit (degrees or radians).
 
         """
-        sentences = ['{value} correspond à quelle valeur en {unit_target} ?',
-                     'Combien de {unit_target} représente {value} ?',
-                     '{value} donne combien en {unit_target} ?',
-                     'Quelle est l’équivalence exacte en {unit_target} de {value} ?']
+        sentences = ['{l}{value}{l} correspond à quelle valeur en {l}{unit_target}{l} ?',
+                     'Combien de {l}{unit_target}{l} représente {l}{value}{l} ?',
+                     '{l}{value}{l} donne combien en {l}{unit_target}{l} ?',
+                     'Quelle est l’équivalence exacte en {l}{unit_target}{l} de {l}{value}{l} ?']
 
         couple_values = []
         while len(couple_values) < 4:
             new_value = choice(self.get_extended_angles())
-            new_value = (new_value, convert_degree_into_radian(new_value))
+            new_value = (new_value, convert_degree_into_radian(new_value, latex=self.latex))
             if new_value not in couple_values:
                 couple_values.append(new_value)
         degree_or_radian = randint(0, 1)  # Chose if radian or degree
@@ -1091,9 +1094,9 @@ class Trigonometry(QuestionsMCQ):
 
         unit_target = ('degrés', 'radians')[1 - degree_or_radian]
 
-        return {'question': choice(sentences).format(value=answer, unit_target=unit_target),
-                'suggested_answer': values,
-                'index_answer': answer_index}
+        return {'question': choice(sentences).format(value=answer, unit_target=unit_target, l="$" if self.latex else ""),
+                'index_answer': answer_index,
+                'suggested_answer': [convert_value_to_latex(value) if self.latex else value for value in values]}
 
 
 def generate_mcq_question(subjects: Union[list[str], str] = '*', *, latex: bool = False) -> dict:
@@ -1113,7 +1116,7 @@ def generate_mcq_question(subjects: Union[list[str], str] = '*', *, latex: bool 
     #  I link "manually" word with the function that generate question about the math discipline.
     all_subjects = {
         'Arithmetic': Arithmetic(latex=latex),
-        'Trigonometry': Trigonometry(),
+        'Trigonometry': Trigonometry(latex=latex),
         'Geometry': Geometry(latex=latex),
         'Algebra': Algebra(latex=latex)
     }

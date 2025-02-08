@@ -1,6 +1,9 @@
 """
 to activate virtual environment on Windows:
 > Set-ExecutionPolicy Unrestricted -Scope Process
+to create npm install on Windows:
+> Set-ExecutionPolicy Restricted -Scope CurrentUser
+
 To Do List:
 - ui -
 Centrer la réponse
