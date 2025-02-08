@@ -75,7 +75,7 @@ else:
 
     @app.get('/{rest_of_path:path}', tags=['React App'])
     async def react_app(req: Request, rest_of_path: str):
-        return templates.TemplateResponse('index.html', {'request': req})
+        return templates.TemplateResponse(f'index.html', {'request': req})
 
 if __name__ == '__main__':
     uvicorn.run(app)

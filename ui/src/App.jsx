@@ -100,6 +100,13 @@ function App() {
   const [shuffledColors, setShuffledColors] = useState([]);
   const [showPopup, setShowPopup] = useState(false);
   const [popupMessage, setPopupMessage] = useState("");
+  const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
+
+  useEffect(() => {
+    const updateHeight = () => setViewportHeight(window.innerHeight);
+    window.addEventListener("resize", updateHeight);
+    return () => window.removeEventListener("resize", updateHeight);
+  }, []);
 
   function validAnswer(index) {
     if (index !== data.index_answer) {
@@ -125,7 +132,7 @@ function App() {
 
   if (isLoading || isError) {
     return (
-      <div style={{ position: "relative", height: "100vh", width: "100vw" }}>
+      <div style={{ position: "relative", height: viewportHeight, width: "100vw" }}>
         {isError && (
           <div
             style={{
@@ -158,7 +165,7 @@ function App() {
   }
 
   return (
-    <div className="App container" style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+    <div className="App container" style={{ display: "flex", flexDirection: "column", minHeight: viewportHeight }}>
       <div
         className="question text-center"
         style={{
@@ -219,7 +226,7 @@ function App() {
           top: 0,
           left: 0,
           width: "100vw",
-          height: "100vh",
+          height: viewportHeight,
           backgroundColor: "rgba(142, 22, 22, 0.6)",
           display: "flex",
           justifyContent: "center",

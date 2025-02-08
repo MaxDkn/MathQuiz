@@ -807,8 +807,8 @@ class Geometry(QuestionsMCQ):
 
     def q_how_many_side(self) -> dict:
         sentences = ['Combien de côté un {l}{polygone_prefix}agone{l} possède t\'il ?',
-                     'Un {l}{polygone_prefix}agone{l}, c\'est un polygone à comien de coté ?',
-                     'Nombre de coté d\'un {l}{polygone_prefix}agone{l} ?']
+                     'Un {l}{polygone_prefix}agone{l}, c\'est un polygone à combien de coté ?',
+                     'Quel est le nombre de coté d\'un {l}{polygone_prefix}agone{l} ?']
 
         prefix = choice(list(self.prefix['shapes']))
         answer = self.prefix['shapes'][prefix]
@@ -954,7 +954,11 @@ class Trigonometry(QuestionsMCQ):
                        0.707: f"{Latex.frac.format(a=Latex.sqrt.format(n=2), b=2)}" if self.latex else f'{sqrt.format(number=2)}/2',
                        0.866: f"{Latex.frac.format(a=Latex.sqrt.format(n=3), b=2)}" if self.latex else f'{sqrt.format(number=3)}/2',
                        1: '1'}
-        
+        self.relation = {
+            'cosinus': 'adjacent/hypothénuse',
+            'sinus': 'opposé/hypothénuse',
+            'tangente': 'opposé/adjacent'
+        }
 
         #  "base" angle that we are supposed to know and from which, we can find all the others
         self.degree = f"{Latex.degree}" if latex else "°"
@@ -984,6 +988,40 @@ class Trigonometry(QuestionsMCQ):
         value += delta_in_degree
         value = str(value) + self.degree
         return value
+
+    def q_trigo_formula(self):
+        sentences = [
+            'Dans un triangle rectangle, {determinant} {l}{trigo_function}{l} est-il le rapport entre l\'{l}{side1}{l} et l\'{l}{side2}{l} ?',
+            '{determinant} {l}{trigo_function}{l} d\'un angle est-il égal au rappport {l}{frac}{l} ?'
+        ]
+        trigo_function = choice(list(self.relation))
+        values = [True, False]
+        result = choice(values)
+        if result:
+            side1, side2 = self.relation[trigo_function].split("/")
+        else:
+            while True:
+                possibilities = []
+                for i in self.relation:
+                    side1, side2 = self.relation[i].split("/")
+                    if side1 not in possibilities:
+                        possibilities.append(side1)
+                    if side2 not in possibilities:
+                        possibilities.append(side2)
+                side1 = choice(possibilities)
+                possibilities.remove(side1)
+                side2 = choice(possibilities)
+                #  Check if it's unfortunately the good result.
+                if [side1, side2] != self.relation[trigo_function].split('/'):
+                    break
+
+        sentence = choice(sentences)
+        determinant = 'le' if trigo_function in ['sinus', 'cosinus'] else 'la'
+        return {'question': sentence.format(determinant=determinant, trigo_function=trigo_function,
+                                            l="$" if self.latex else "", frac=Latex.frac.format(a=side1, b=side2) if self.latex else f"{side1}/{side2}",
+                                            side1=side1, side2=side2),
+                'index_answer': values.index(result),
+                'suggested_answer': values}
 
     def q_found_value(self) -> dict:
         """
