@@ -14,7 +14,7 @@ __pycache__/
 
 # production
 
-
+.idea/
 # misc
 .DS_Store
 .env.local
