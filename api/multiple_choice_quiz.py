@@ -174,7 +174,7 @@ def generate_number_without_value(interval: tuple = (-10, 10), *, forbidden_valu
 
 
 def shuffle_a_list(list_of_values: list) -> list:
-    new_list = list_of_values
+    new_list = list_of_values.copy()
     shuffle(new_list)
     return new_list
 

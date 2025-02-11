@@ -3,9 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import "./index.css";
 
 // URL et constantes
-const API_URL = "/api";
-const ENDPOINT_URL = `${API_URL}/generate`;
-const subjects = ["Arithmetic", "Algebra", "Trigonometry", "Geometry"];
+const API_URL = "http://127.0.0.1:8000";
+const ENDPOINT_URL = `${API_URL}/api/generate`;
+const all_subjects = ['Algebra', 'Arithmetic', 'Geometry', 'Trigonometry'];
 
 // Remplacer les couleurs en dur par des références aux variables CSS
 const colors = [
@@ -73,9 +73,9 @@ const shuffleArray = (array) => {
 };
 
 // Récupération des données depuis l'API
-async function fetchData() {
+async function fetchData(subjects_chosen) {
   const response = await fetch(ENDPOINT_URL, {
-    body: JSON.stringify({ subjects }),
+    body: JSON.stringify({ subjects: subjects_chosen, latex: true }),
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
@@ -96,40 +96,103 @@ async function fetchData() {
 }
 
 function App() {
-  const { data, isError, isLoading, refetch } = useQuery(["generate"], fetchData);
+  // États pour le jeu, la sélection des sujets, etc.
+  const [gameStarted, setGameStarted] = useState(false);
   const [shuffledColors, setShuffledColors] = useState([]);
   const [showPopup, setShowPopup] = useState(false);
   const [popupMessage, setPopupMessage] = useState("");
   const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
-
+  const [subjects, setSubjects] = useState(all_subjects); 
+  const [numQuestions, setNumQuestions] = useState(10);
+  
+  // Met à jour la hauteur de la fenêtre (utile sur iOS lorsque la barre d'outils disparaît)
   useEffect(() => {
     const updateHeight = () => setViewportHeight(window.innerHeight);
     window.addEventListener("resize", updateHeight);
     return () => window.removeEventListener("resize", updateHeight);
   }, []);
 
-  function validAnswer(index) {
-    if (index !== data.index_answer) {
-      setPopupMessage(
-        <>
-          Vous vous êtes trompé, la bonne réponse était {parseMathText(data.suggested_answer[data.index_answer])}
-        </>
-      );
-      setShowPopup(true);
-    } else {
-      refetch();
+  // La requête s'exécute uniquement après le démarrage du jeu
+  const { data, isError, isLoading, refetch } = useQuery(
+    ["generate"],
+    () => fetchData(subjects),
+    {
+      enabled: gameStarted, // lancement uniquement après démarrage
     }
-  }
-
-  const closePopup = () => {
-    setShowPopup(false);
-    refetch();
-  };
+  );
 
   useEffect(() => {
     setShuffledColors(shuffleArray(colors));
   }, [data]);
 
+  // Met à jour la sélection des sujets via les cases à cocher
+  const handleSubjectChange = (e) => {
+    const subject = e.target.value;
+    if (e.target.checked) {
+      setSubjects((prev) => [...prev, subject]);
+    } else {
+      setSubjects((prev) => prev.filter((s) => s !== subject));
+    }
+  };
+
+  const launchGame = () => {
+    setGameStarted(true);
+  };
+
+  // Écran d'accueil avec choix des sujets (utilisant Bootstrap)
+  if (!gameStarted) {
+    return (
+      <div
+        className="welcome-screen d-flex align-items-center justify-content-center"
+        style={{ height: viewportHeight, width: "100vw" }}
+      >
+        <div className="card p-4">
+          <h2 className="card-title text-center mb-4">
+            Choisissez votre(s) sujet(s) et le nombre de questions
+          </h2>
+          <form>
+          
+
+            {all_subjects.map((item, index) => (
+              <div key={index} className="form-check">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  id={`subject${item}`}
+                  value={item}
+                  onChange={handleSubjectChange}
+                  checked={subjects.includes(item)}
+                />
+                <label className="form-check-label" htmlFor={`subject${item}`}>
+                  {item}
+                </label>
+              </div>
+            ))}
+            <div className="form-group mt-3">
+              <label htmlFor="numQuestions">Nombre de questions :</label>
+              <input
+                type="number"
+                id="numQuestions"
+                className="form-control"
+                min="1"
+                value={numQuestions}
+                onChange={(e) => setNumQuestions(Number(e.target.value))}
+              />
+            </div>
+          </form>
+          <button
+            className="btn btn-primary mt-3 w-100"
+            onClick={launchGame}
+            disabled={subjects.length === 0 || numQuestions < 1}
+          >
+            Jouer
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Affichage du spinner ou du message d'erreur lors du chargement / en cas d'erreur
   if (isLoading || isError) {
     return (
       <div style={{ position: "relative", height: viewportHeight, width: "100vw" }}>
@@ -164,6 +227,26 @@ function App() {
     );
   }
 
+  // Fonction pour valider la réponse
+  function validAnswer(index) {
+    if (index !== data.index_answer) {
+      setPopupMessage(
+        <>
+          Vous vous êtes trompé, la bonne réponse était{" "}
+          {parseMathText(data.suggested_answer[data.index_answer])}
+        </>
+      );
+      setShowPopup(true);
+    } else {
+      refetch();
+    }
+  }
+
+  const closePopup = () => {
+    setShowPopup(false);
+    refetch();
+  };
+
   return (
     <div className="App container" style={{ display: "flex", flexDirection: "column", minHeight: viewportHeight }}>
       <div
@@ -177,7 +260,7 @@ function App() {
           color: "var(--question-text)",
           ...questionStyle,
         }}
-        >
+      >
         {parseMathText(data.question)}
       </div>
 
@@ -219,39 +302,41 @@ function App() {
       </div>
 
       {showPopup && (
-      <div
-        onClick={closePopup}
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100vw",
-          height: viewportHeight,
-          backgroundColor: "rgba(142, 22, 22, 0.6)",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          zIndex: 1050,
-          cursor: "pointer",
-        }}
-      >
         <div
+          onClick={closePopup}
           style={{
-            backgroundColor: "var(--popup-bg)",
-            color: "var(--popup-text)",
-            padding: "20px",
-            borderRadius: "10px",
-            textAlign: "center",
-            boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
-            maxWidth: "500px",
-            width: "80%",
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: viewportHeight,
+            backgroundColor: "rgba(142, 22, 22, 0.6)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 1050,
+            cursor: "pointer",
           }}
         >
-          <h5 style={{ color: "red", marginBottom: "15px" }}>Erreur de Réponse</h5>
-          <p>{popupMessage}</p>
+          <div
+            style={{
+              backgroundColor: "var(--popup-bg)",
+              color: "var(--popup-text)",
+              padding: "20px",
+              borderRadius: "10px",
+              textAlign: "center",
+              boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
+              maxWidth: "500px",
+              width: "80%",
+            }}
+          >
+            <h5 style={{ color: "red", marginBottom: "15px" }}>
+              Erreur de Réponse
+            </h5>
+            <p>{popupMessage}</p>
+          </div>
         </div>
-      </div>
-    )}
+      )}
     </div>
   );
 }

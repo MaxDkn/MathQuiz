@@ -3,19 +3,16 @@ to activate virtual environment on Windows:
 > Set-ExecutionPolicy Unrestricted -Scope Process
 to create npm install on Windows:
 > Set-ExecutionPolicy Restricted -Scope CurrentUser
-
-To Do List:
-- ui -
-Centrer la réponse
+to use npm on Windows:
+> Set-ExecutionPolicy Unrestricted -Scope CurrentUser
 """
 import logging
 import uvicorn
 from fastapi import FastAPI
+from pydantic import BaseModel
+from typing import Optional, List
 from fastapi.requests import Request
-from pydantic import BaseModel, Field
-from typing import Optional, List, Union
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import ORJSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -35,8 +32,8 @@ app.add_middleware(
 
 class QuestionData(BaseModel):
     question: str
-    index_answer: int
     suggested_answer: List
+    index_answer: int
     subject: str
 
 
@@ -47,16 +44,6 @@ def default_subject():
 class ChooseSubject(BaseModel):
     subjects: Optional[List[Optional[str]]] = default_subject()
     latex: Optional[bool] = True
-
-
-@app.post('/api/test')
-async def testing_frontend():
-    return {
-        "question": "Quelle est la valeur de $\\cos^2(-\\frac{\\pi}{2})$ ?",
-        "suggested_answer": ["$2(x+1) (x-2)$", "$\\dfrac{\\sqrt{2}}{2}$", "$\\sum_{i=4}^{10}(5i-1)^2$", "$\\dfrac{\\sqrt{x}}{y}$"],
-        "index_answer": 0,
-        "subject": "Trigonometry"
-    }
 
 
 @app.post('/api/generate', response_model=QuestionData)
