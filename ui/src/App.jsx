@@ -80,14 +80,14 @@ const shuffleArray = (array) => {
 // ─────────────────────────────────────────────────────────────
 
 // Récupère une question depuis l'API
-async function fetchQuestion(subjects) {
+async function fetchQuestion(subjects, useLatex) {
   const response = await fetch(`${ENDPOINT_URL}/generate`, {
     method: "POST",
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ subjects, latex: true }),
+    body: JSON.stringify({ subjects, latex: useLatex}),
   });
 
   if (!response.ok) {
@@ -130,6 +130,8 @@ const WelcomeScreen = ({
   handleSubjectChange,
   numQuestions,
   setNumQuestions,
+  useLatex,
+  setUseLatex,
   launchGame,
 }) => {
   const [showSettings, setShowSettings] = useState(false);
@@ -189,6 +191,12 @@ const WelcomeScreen = ({
         <div
           className="card p-5 shadow-lg rounded-4 position-absolute top-50 start-50 translate-middle"
           onClick={(e) => e.stopPropagation()}
+          style={{
+              padding: "20px",
+              borderRadius: "10px",
+              boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
+              maxWidth: "500px",
+              width: "80%"}}
         >
           <div className="mb-4">
             <h5>Sujets</h5>
@@ -214,6 +222,25 @@ const WelcomeScreen = ({
                   </label>
                 </div>
               ))}
+            </div>
+          </div>
+          {/* Ajout du bouton on/off pour LaTeX */}
+          <div className="mb-4">
+            <h5>Activer LaTeX</h5>
+            <div className="form-check form-switch">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                id="latexSwitch"
+                checked={useLatex}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  setUseLatex(e.target.checked);
+                }}
+              />
+              <label className="form-check-label" htmlFor="latexSwitch">
+                {useLatex ? "Activé" : "Désactivé"}
+              </label>
             </div>
           </div>
           <div className="mb-4">
@@ -303,7 +330,7 @@ function App() {
   const [questionStartTime, setQuestionStartTime] = useState(Date.now());
   const [showScoreScreen, setShowScoreScreen] = useState(false);
   const [seriesId, setSeriesId] = useState(0);
-
+  const [useLatex, setUseLatex] = useState(true)
 
   // Mise à jour de la hauteur de la fenêtre
   useEffect(() => {
@@ -320,7 +347,7 @@ function App() {
     refetch,
   } = useQuery({
     queryKey: ["generate", subjects, seriesId],
-    queryFn: () => fetchQuestion(subjects),
+    queryFn: () => fetchQuestion(subjects, useLatex),
     enabled: gameStarted,
   });
   
@@ -361,6 +388,8 @@ function App() {
         handleSubjectChange={handleSubjectChange}
         numQuestions={numQuestions}
         setNumQuestions={setNumQuestions}
+        useLatex={useLatex}
+        setUseLatex={setUseLatex}
         launchGame={launchSeries}
       />
     );

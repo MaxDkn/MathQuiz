@@ -36,7 +36,8 @@
   }
 
   .blinking-text {
-    animation: blinking 1.5s infinite;
+    animation: blinking 3s infinite;
+    text-align: center;
   }
   
   @keyframes blinking {
