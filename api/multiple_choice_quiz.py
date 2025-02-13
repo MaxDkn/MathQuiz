@@ -34,7 +34,7 @@ My Personal To Do List:
 from tqdm import tqdm
 from typing import Optional, Union
 from random import randint, choice, shuffle, choices, random
-from math import ceil, sin, cos, radians, prod, gcd, lcm, floor, log10
+from math import ceil, sin, cos, radians, prod, gcd, lcm, floor, exp
 
 
 pi = 'π'  # or 'pi' if 'π' doesn't work
@@ -889,8 +889,8 @@ class Geometry(QuestionsMCQ):
 
                         new_side = generate_number_without_value(interval, forbidden_value=side)
                         side.append(new_side)
-                        side = side.sort()
-
+                        side.sort()
+                        
         a, b, c = shuffle_a_list(side)
 
         return {'question': choice(sentences).format(a=a, b=b, c=c, l="$" if self.latex else ""),
@@ -1168,12 +1168,28 @@ def generate_mcq_question(subjects: Union[list[str], str] = '*', *, latex: bool 
     return all_subjects[random_subject].generate()
 
 
-def calculate_score(metaData: dict, *, a1: int = 2, a2: int = 100):
-    """Calculate the score based on the provided metaData."""
+def calculate_score(metaData: dict, *, base_points: int = 100, decay_rate: float = 0.5):
+    """
+    Calcule le score en fonction de la justesse et de la rapidité des réponses.
+    
+    Pour chaque réponse correcte, on attribue un score de base qui est ensuite réduit
+    par une pénalité exponentielle en fonction du temps mis pour répondre.
+    
+    - base_points : le score maximal attribué pour une réponse correcte très rapide.
+    - decay_rate  : le taux de décroissance qui ajuste l'impact du temps de réponse.
+    
+    Exemple :
+      Si timeTaken = 0.5 sec et decay_rate = 0.5, alors
+          bonus = exp(-0.5 * 0.5) ≈ 0.78,
+      ce qui donne environ 78 points sur 100.
+    """
     score = 0
     for answer in metaData["answers"].values():
-        score += int(answer["correct_answer"]) * (1 / log10(answer['timeTaken'] + a1)) * a2
-    return round(score, 2)
+        if answer["correct"]:
+            # La rapidité est récompensée par une décroissance exponentielle :
+            time_bonus = exp(-decay_rate * answer["timeTaken"])
+            score += base_points * time_bonus
+    return round(score, 0)
 
 
 def run(number_of_questions: Optional[int] = None, subjects: Union[list[str], str] = '*'):
@@ -1215,8 +1231,10 @@ def run(number_of_questions: Optional[int] = None, subjects: Union[list[str], st
 def simple_test():
     stats = {}
     for _ in tqdm(range(15_000)):
-        data = generate_mcq_question("*", latex=True)
+        #  data = generate_mcq_question("*", latex=True)
+        data = Geometry(latex=True).q_triangle_nature()
         print(data)
+        
         for important_key in ["question", "suggested_answer", "index_answer"]:
             if important_key not in data.keys():
                 raise ValueError(f"The '{important_key}' key is missing in the {data['question_name']} function.")

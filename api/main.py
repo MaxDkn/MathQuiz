@@ -9,7 +9,7 @@ to use npm on Windows:
 import logging
 import uvicorn
 from fastapi import FastAPI
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from fastapi.requests import Request
 from typing import Optional, List, Dict
 from fastapi.staticfiles import StaticFiles
@@ -42,7 +42,8 @@ class Answers(BaseModel):
     question_name: str
     subject: str
     timeTaken: float
-    correct_answer: bool
+    correct: bool
+
 
 class MetaData(BaseModel):
     answers: Dict[str, Answers]
@@ -53,20 +54,18 @@ def default_subject():
 
 
 class ChooseSubject(BaseModel):
-    subjects: Optional[List[Optional[str]]] = default_subject()
+    subjects: Optional[List[str]] = Field(default_factory=default_subject)
     latex: Optional[bool] = True
 
 
 @app.post('/api/generate', response_model=QuestionData)
-async def generate_a_question(subjects: Optional[ChooseSubject]):
-    return generate_mcq_question(**subjects.model_dump())
+async def generate_a_question(subjects: ChooseSubject):
+    return generate_mcq_question(**subjects.dict())
 
 
 @app.post('/api/score')
-async def calculate_score_from_meta_data(metaData: dict):
-    print(metaData)
-    return calculate_score(**metaData)
-
+async def calculate_score_from_meta_data(metaData: MetaData):
+    return calculate_score(metaData.dict())
 
 #  Deploy React application from the build
 try:

@@ -21,7 +21,7 @@ services:
       - api
     networks:
       - mathquiz-network
-    command: ["npm", "start"]  # Démarrer le serveur React en mode développement  |  Supprimer cette ligne en prod
+    #  command: ["npm", "start"]  # Démarrer le serveur React en mode développement  |  Supprimer cette ligne en prod
 
 networks:
   mathquiz-network:
