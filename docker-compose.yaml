@@ -1,0 +1,28 @@
+services:
+  api:
+    build: ./api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./api:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - mathquiz-network
+
+  ui:
+    build: ./ui
+    volumes:
+      - ./ui:/app/ui  # Monte le code source dans le conteneur
+      - /app/ui/node_modules  # Évite d'écraser node_modules
+    ports:
+      - "3000:3000" 
+    depends_on:
+      - api
+    networks:
+      - mathquiz-network
+    command: ["npm", "start"]  # Démarrer le serveur React en mode développement  |  Supprimer cette ligne en prod
+
+networks:
+  mathquiz-network:
+    driver: bridge
