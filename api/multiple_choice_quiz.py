@@ -31,11 +31,11 @@ My Personal To Do List:
   - create better test, but I don't see how I can do that
 
 """
-
-from random import randint, choice, shuffle, choices, random
-from math import ceil, sin, cos, radians, prod, gcd, lcm, floor
-from typing import Optional, Union
 from tqdm import tqdm
+from typing import Optional, Union
+from random import randint, choice, shuffle, choices, random
+from math import ceil, sin, cos, radians, prod, gcd, lcm, floor, log10
+
 
 pi = 'π'  # or 'pi' if 'π' doesn't work
 sqrt = '√({number})'  # or 'sqrt({number})' if it doesn't draw on the terminal
@@ -221,7 +221,7 @@ class QuestionsMCQ:
 
         #  Then we add the subject key
         response['subject'] = self.children_object_name
-        response['question_name'] = function_chosen.__name__
+        response['question_name'] = function_chosen.__name__[1:]  #  remove "q_"
 
         return response
 
@@ -1166,6 +1166,15 @@ def generate_mcq_question(subjects: Union[list[str], str] = '*', *, latex: bool 
 
     #  returns the dictionary with the following keys "question", "suggested_answer", "index_answer" and "subject"
     return all_subjects[random_subject].generate()
+
+
+def calculate_score(metaData: dict, *, a1: int = 2, a2: int = 100):
+    """Calculate the score based on the provided metaData."""
+    assert metaData.get('answers') is not None
+    score = 0
+    for answer in metaData["answers"].values():
+        score += int(answer["correct_answer"]) * (1 / log10(answer['timeTaken'] + a1)) * a2
+    return round(score, 2)
 
 
 def run(number_of_questions: Optional[int] = None, subjects: Union[list[str], str] = '*'):

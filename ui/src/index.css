@@ -34,3 +34,14 @@
     --popup-text: #fff;
     --popup-border: #fff;
   }
+
+  .blinking-text {
+    animation: blinking 1.5s infinite;
+  }
+  
+  @keyframes blinking {
+    0% { opacity: 1; }
+    50% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+  

@@ -10,13 +10,13 @@ import logging
 import uvicorn
 from fastapi import FastAPI
 from pydantic import BaseModel
-from typing import Optional, List
 from fastapi.requests import Request
+from typing import Optional, List, Dict
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 
-from multiple_choice_quiz import generate_mcq_question
+from multiple_choice_quiz import generate_mcq_question, calculate_score
 
 app = FastAPI()
 logger = logging.getLogger('uvicorn.error')
@@ -34,7 +34,18 @@ class QuestionData(BaseModel):
     question: str
     suggested_answer: List
     index_answer: int
+    question_name: str
     subject: str
+
+
+class Answers(BaseModel):
+    question_name: str
+    subject: str
+    timeTaken: float
+    correct_answer: bool
+
+class MetaData(BaseModel):
+    answers: Dict[int, Answers]
 
 
 def default_subject():
@@ -49,6 +60,11 @@ class ChooseSubject(BaseModel):
 @app.post('/api/generate', response_model=QuestionData)
 async def generate_a_question(subjects: Optional[ChooseSubject]):
     return generate_mcq_question(**subjects.model_dump())
+
+
+@app.post('/api/score')
+async def calculate_score_from_meta_data(metaData: MetaData):
+    return calculate_score(metaData.model_dump())
 
 
 #  Deploy React application from the build
