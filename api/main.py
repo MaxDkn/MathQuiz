@@ -45,7 +45,7 @@ class Answers(BaseModel):
     correct_answer: bool
 
 class MetaData(BaseModel):
-    answers: Dict[int, Answers]
+    answers: Dict[str, Answers]
 
 
 def default_subject():
@@ -63,8 +63,9 @@ async def generate_a_question(subjects: Optional[ChooseSubject]):
 
 
 @app.post('/api/score')
-async def calculate_score_from_meta_data(metaData: MetaData):
-    return calculate_score(metaData.model_dump())
+async def calculate_score_from_meta_data(metaData: dict):
+    print(metaData)
+    return calculate_score(**metaData)
 
 
 #  Deploy React application from the build

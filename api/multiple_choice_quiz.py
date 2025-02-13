@@ -221,7 +221,7 @@ class QuestionsMCQ:
 
         #  Then we add the subject key
         response['subject'] = self.children_object_name
-        response['question_name'] = function_chosen.__name__[1:]  #  remove "q_"
+        response['question_name'] = function_chosen.__name__[2:]  #  remove "q_"
 
         return response
 
@@ -1170,7 +1170,6 @@ def generate_mcq_question(subjects: Union[list[str], str] = '*', *, latex: bool 
 
 def calculate_score(metaData: dict, *, a1: int = 2, a2: int = 100):
     """Calculate the score based on the provided metaData."""
-    assert metaData.get('answers') is not None
     score = 0
     for answer in metaData["answers"].values():
         score += int(answer["correct_answer"]) * (1 / log10(answer['timeTaken'] + a1)) * a2
@@ -1217,7 +1216,7 @@ def simple_test():
     stats = {}
     for _ in tqdm(range(15_000)):
         data = generate_mcq_question("*", latex=True)
-        #  print(data)
+        print(data)
         for important_key in ["question", "suggested_answer", "index_answer"]:
             if important_key not in data.keys():
                 raise ValueError(f"The '{important_key}' key is missing in the {data['question_name']} function.")

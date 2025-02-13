@@ -1,11 +1,11 @@
 /* Mode light (par défaut) */
 :root {
     /* Boutons déjà définis */
-    --button-color-1: #CEE5D0;
-    --button-color-2: #F3F0D7;
-    --button-color-3: #FED2AA;
-    --button-color-4: #F0C1E1;
-  
+    --button-color-1: #FFCDB2;
+    --button-color-2: #FFB4A2;
+    --button-color-3: #E5989B;
+    --button-color-4: #B5828C;
+    
     /* Question */
     --question-bg: #f9f9f9;
     --question-text: #000;

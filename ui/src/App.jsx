@@ -2,12 +2,12 @@ import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import "./index.css";
 
-// URL et constantes
+// URL and constants
 const API_URL = "http://127.0.0.1:8000";
 const ENDPOINT_URL = `${API_URL}/api`;
 const all_subjects = ["Algebra", "Arithmetic", "Geometry", "Trigonometry"];
 
-// Remplacer les couleurs en dur par des références aux variables CSS
+// Colors (using CSS variables)
 const colors = [
   "var(--button-color-1)",
   "var(--button-color-2)",
@@ -15,7 +15,7 @@ const colors = [
   "var(--button-color-4)"
 ];
 
-// Styles responsive pour la question et les réponses
+// Responsive styles for the question and answers
 const answerButtonStyle = {
   fontSize: "calc(1rem + 0.5vw)",
   whiteSpace: "normal",
@@ -26,7 +26,7 @@ const questionStyle = {
   fontSize: "calc(1rem + 1vw)"
 };
 
-// Composant pour afficher le LaTeX avec KaTeX
+// Component to display LaTeX with KaTeX
 const MathComponent = ({ latex }) => {
   const mathRef = React.useRef(null);
 
@@ -47,12 +47,11 @@ const MathComponent = ({ latex }) => {
   );
 };
 
-// Fonction qui découpe le texte sur les délimiteurs $...$
+// Function to split text based on $...$ delimiters and render LaTeX
 const parseMathText = (text) => {
   if (typeof text !== "string") {
     return text;
   }
-
   const parts = text.split(/(\$[^$]+\$)/g);
   return parts.map((part, index) => {
     if (part.startsWith("$") && part.endsWith("$")) {
@@ -63,7 +62,7 @@ const parseMathText = (text) => {
   });
 };
 
-// Fonction pour mélanger un tableau (ici pour les couleurs)
+// Function to shuffle an array (for colors)
 const shuffleArray = (array) => {
   let shuffledArray = [...array];
   for (let i = shuffledArray.length - 1; i > 0; i--) {
@@ -76,7 +75,7 @@ const shuffleArray = (array) => {
   return shuffledArray;
 };
 
-// Récupération des données depuis l'API
+// Fetch data from the API (for questions and answers)
 async function fetchData(subjects_chosen) {
   const response = await fetch(`${ENDPOINT_URL}/generate`, {
     body: JSON.stringify({ subjects: subjects_chosen, latex: true }),
@@ -99,6 +98,7 @@ async function fetchData(subjects_chosen) {
   return { ...data, suggested_answer: transformedAnswers };
 }
 
+// Function to get the score from the API
 async function getScore(metaData) {
   const response = await fetch(`${ENDPOINT_URL}/score`, {
     body: JSON.stringify({ metaData }),
@@ -116,6 +116,7 @@ async function getScore(metaData) {
   return data;
 }
 
+// Welcome screen component with settings and subject selection
 const WelcomeScreen = ({
   subjects,
   handleSubjectChange,
@@ -125,7 +126,7 @@ const WelcomeScreen = ({
 }) => {
   const [showSettings, setShowSettings] = useState(false);
 
-  // Lancer le jeu avec la touche "Entrée" uniquement si les réglages ne sont pas affichés
+  // Launch game with Enter key if settings are not shown
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (
@@ -146,7 +147,7 @@ const WelcomeScreen = ({
     setShowSettings((prev) => !prev);
   };
 
-  // Le clic sur le fond déclenche le lancement du jeu si les réglages ne sont pas affichés
+  // Clicking on the background launches the game if settings are not shown
   const handleBackgroundClick = () => {
     if (!showSettings && subjects.length > 0 && numQuestions >= 1) {
       launchGame();
@@ -158,23 +159,24 @@ const WelcomeScreen = ({
       className="welcome-screen position-relative vh-100"
       onClick={handleBackgroundClick}
       style={{
-        backgroundColor: colors[0],
         cursor: !showSettings ? "pointer" : "default"
       }}
     >
-      {/* Titre en haut, centré */}
+      {/* Title at the top center */}
       <div className="position-absolute top-0 start-50 translate-middle-x p-3">
-        <h1 className="display-1" style={{ color: colors[2] }}>{parseMathText("$\\mathbb{M}ath\\mathbb{Q}ui^2z$")}</h1>
+        <h1 className="display-1">
+          {parseMathText("$\\mathbb{M}ath\\mathbb{Q}ui^2z$")}
+        </h1>
       </div>
 
-      {/* Icône des réglages en haut à droite */}
+      {/* Settings icon in the top right */}
       <div className="position-absolute top-0 end-0 p-3">
-        <div onClick={toggleSettings} style={{ cursor: "pointer", color: colors[3] }} title="Paramètres">
+        <div onClick={toggleSettings} style={{ cursor: "pointer" }} title="Paramètres">
           <i className="bi bi-gear-fill fs-3"></i>
         </div>
       </div>
 
-      {/* Card de réglages (affichée uniquement si activée) */}
+      {/* Settings card */}
       {showSettings && (
         <div
           className="card p-5 shadow-lg rounded-4 position-absolute top-50 start-50 translate-middle"
@@ -232,12 +234,12 @@ const WelcomeScreen = ({
         </div>
       )}
 
-      {/* Texte clignotant au centre si les réglages ne sont pas affichés */}
+      {/* Blinking text to prompt user to start */}
       {!showSettings && (
         <div className="position-absolute top-50 start-50 translate-middle">
           <div
             className="blinking-text"
-            style={{ fontSize: "1.5rem", fontWeight: "bold", color: colors[2] }}
+            style={{ fontSize: "1.5rem", fontWeight: "bold" }}
           >
             Appuyer pour jouer
           </div>
@@ -247,17 +249,32 @@ const WelcomeScreen = ({
   );
 };
 
-const ScoreScreen = (scoreMetaData) => {
+// Score screen component using React Query to fetch the score
+const ScoreScreen = ({ scoreMetaData, onBack }) => {
+  const { data: score, isLoading, isError } = useQuery(
+    ["score", scoreMetaData],
+    () => getScore(scoreMetaData),
+    { enabled: true }
+  );
+
+  if (isLoading) {
+    return <div>Loading score...</div>;
+  }
+
+  if (isError) {
+    return <div>Error loading score.</div>;
+  }
+
   return (
     <div>
-      <h1>Score ! {getScore(scoreMetaData)}</h1>
+      <h1>Score ! {score}</h1>
+      <button onClick={onBack}>Back</button>
     </div>
-  )
-}
-
+  );
+};
 
 function App() {
-  // États pour le jeu, la sélection des sujets, etc.
+  // Game state and configuration
   const [gameStarted, setGameStarted] = useState(false);
   const [shuffledColors, setShuffledColors] = useState([]);
   const [showPopup, setShowPopup] = useState(false);
@@ -266,22 +283,23 @@ function App() {
   const [subjects, setSubjects] = useState(all_subjects);
   const [numQuestions, setNumQuestions] = useState(3);
   const [currentQuestion, setCurrentQuestion] = useState(1);
-  const [scoreMetaData, setScoreMetaData] = useState({answers: {}});
+  const [scoreMetaData, setScoreMetaData] = useState({ answers: {} });
   const [questionStartTime, setQuestionStartTime] = useState(Date.now());
+  const [showScoreScreen, setShowScore] = useState(false);
 
-  // Met à jour la hauteur de la fenêtre (utile sur iOS lorsque la barre d’outils disparaît)
+  // Update viewport height on resize (useful for mobile devices)
   useEffect(() => {
     const updateHeight = () => setViewportHeight(window.innerHeight);
     window.addEventListener("resize", updateHeight);
     return () => window.removeEventListener("resize", updateHeight);
   }, []);
 
-  // La requête s'exécute uniquement après le démarrage du jeu
+  // Fetch question data after the game starts
   const { data, isError, isLoading, refetch } = useQuery(
     ["generate"],
     () => fetchData(subjects),
     {
-      enabled: gameStarted // lancement uniquement après démarrage
+      enabled: gameStarted
     }
   );
 
@@ -289,7 +307,7 @@ function App() {
     setShuffledColors(shuffleArray(colors));
   }, [data]);
 
-  // Met à jour la sélection des sujets via les cases à cocher
+  // Handle subject checkbox changes
   const handleSubjectChange = (e) => {
     const subject = e.target.value;
     if (e.target.checked) {
@@ -299,79 +317,97 @@ function App() {
     }
   };
 
+  // Start a new game series
   const launchSeries = () => {
     setGameStarted(true);
-    setScoreMetaData({answers: {}})
-    setCurrentQuestion(1)
+    setShowScore(false);
+    setScoreMetaData({ answers: {} });
+    setCurrentQuestion(1);
   };
 
-  // Écran d'accueil
+  // Show the welcome screen until the game starts
   if (!gameStarted) {
-    return <WelcomeScreen subjects={subjects}
-                          handleSubjectChange={handleSubjectChange}
-                          numQuestions={numQuestions}
-                          setNumQuestions={setNumQuestions}
-                          launchGame={launchSeries}/>
+    return (
+      <WelcomeScreen
+        subjects={subjects}
+        handleSubjectChange={handleSubjectChange}
+        numQuestions={numQuestions}
+        setNumQuestions={setNumQuestions}
+        launchGame={launchSeries}
+      />
+    );
   }
 
-  // Affichage du spinner ou du message d'erreur lors du chargement / en cas d'erreur
+  // Render the score screen when the game is over
+  if (showScoreScreen) {
+    return (
+      <ScoreScreen
+        scoreMetaData={scoreMetaData}
+        onBack={() => launchSeries()}
+      />
+    );
+  }
+
+  // Show a spinner or error message if data is loading or there is an error
   if (isLoading || isError) {
     return (
       <div style={{ position: "relative", height: viewportHeight, width: "100vw" }}>
-      {isError && (
+        {isError && (
+          <div
+            style={{
+              position: "absolute",
+              top: "10px",
+              width: "100%",
+              textAlign: "center",
+              padding: "0 10px",
+              zIndex: 10
+            }}
+          >
+            <div className="alert alert-danger" role="alert">
+              Erreur dans la récupération des données, l'API n'est pas connectée au frontend.
+            </div>
+          </div>
+        )}
         <div
           style={{
             position: "absolute",
-            top: "10px",
-            width: "100%",
-            textAlign: "center",
-            padding: "0 10px",
-            zIndex: 10
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            zIndex: 5
           }}
         >
-          <div className="alert alert-danger" role="alert">
-            Erreur dans la récupération des données, l'API n'est pas connectée au frontend.
-          </div>
+          <div className="spinner-border" role="status" />
         </div>
-      )}
-      <div
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          zIndex: 5
-        }}
-      >
-        <div className="spinner-border" role="status" />
       </div>
-    </div>)
-  }
-  
-  const nextQuestion = () => {
-    if (currentQuestion >= numQuestions) {
-      console.log(scoreMetaData)
-      setGameStarted(false);
-    }
-    refetch();
-    setCurrentQuestion(currentQuestion+1);
-    setQuestionStartTime(Date.now())
+    );
   }
 
-  // Fonction pour valider la réponse
-  function validAnswer(index) {    
+  // Move to the next question or show the score screen when finished
+  const nextQuestion = () => {
+    if (currentQuestion >= numQuestions) {
+      console.log(scoreMetaData);
+      setShowScore(true);
+    } else {
+      refetch();
+      setCurrentQuestion(currentQuestion + 1);
+      setQuestionStartTime(Date.now());
+    }
+  };
+
+  // Validate the selected answer
+  function validAnswer(index) {
     const timeTaken = (Date.now() - questionStartTime) / 1000;
-    // mise à jour des metadonnées
-    setScoreMetaData(prev => ({
+    setScoreMetaData((prev) => ({
       ...prev,
-      answers : {
+      answers: {
         ...prev.answers,
-         [currentQuestion] : {
+        [`${currentQuestion}`]: {
           question_name: data.question_name,
           subject: data.subject,
           timeTaken: timeTaken,
-          valid: true ? index === data.index_answer : false,
-         }
+          correct_answer: index === data.index_answer,
+        }
       }
     }));
 
@@ -385,8 +421,7 @@ function App() {
       setShowPopup(true);
     } else {
       nextQuestion();
-    };
-    
+    }
   }
 
   const closePopup = () => {
