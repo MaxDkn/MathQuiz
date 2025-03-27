@@ -31,7 +31,6 @@ My Personal To Do List:
   - create better test, but I don't see how I can do that
 
 """
-from tqdm import tqdm
 from typing import Optional, Union
 from random import randint, choice, shuffle, choices, random
 from math import ceil, sin, cos, radians, prod, gcd, lcm, floor, exp
@@ -43,7 +42,7 @@ sqrt = '√({number})'  # or 'sqrt({number})' if it doesn't draw on the terminal
 
 class Latex:
     pi = '\\pi'
-    sqrt = '\\sqrt{{{n}}}'  # sqrt.format(number=6) returns \sqrt{6} and this is the latex format
+    sqrt = '\\sqrt{{{n}}}'  # sqrt.format(n=6) returns \sqrt{6} and this is the latex format
     frac = "\\frac{{{a}}}{{{b}}}"
     degree = '^\\circ'
     times = "\\times"
@@ -52,6 +51,7 @@ class Latex:
     Z = "\\mathbb{Z}"
     cos = "\\cos"
     sin = "\\sin"
+    modulo = "\\equiv{n}\\pmod{{{p}}}"
 
 
 def decomposition_prime_factor(n: int) -> list[int]:
@@ -441,8 +441,8 @@ class Algebra(QuestionsMCQ):
                 'suggested_answer': [convert_value_to_latex(value) if self.latex else value for value in values]
                 }
 
-    def q_calculate_discriminant(self, shuffle_the_equation: bool = True, a_interval: tuple = (-4, 4),
-                                 b_interval: tuple = (-6, 6), c_interval: tuple = (-4, 4)) -> dict:
+    def q_calculate_discriminant(self, shuffle_the_equation: bool = True, a_interval: tuple = (-2, 2),
+                                 b_interval: tuple = (-4, 4), c_interval: tuple = (-2, 2)) -> dict:
         """
         Generates a question asking to calculate the discriminant of a quadratic equation.
         E.g., -x² + 5x - 4 => Δ = 5² - 4×(-1)×(-4) = 9
@@ -751,6 +751,29 @@ class Arithmetic(QuestionsMCQ):
         return {'question': choice(sentences).format(dividend=dividend, divisor=divisor, l="$" if self.latex else ""),
                 'index_answer': values.index(answer),
                 'suggested_answer': values}
+    
+    def q_convert_dec_to_bin(self, interval: tuple = (5, 32)) -> dict:
+        """
+        Ask to convert a decimal number to a binary number
+        :param interval: the interval of the values that can be asked
+        :return:
+        """
+        sentences = ["Transforme le nombre {l}{number}{l} en nombre binaire.",
+                     "Exprime {l}{number}{l} en base {l}2{l}.",
+                     "Convertis {l}{number}{l} du décimal vers le binaire."]
+        value = randint(*interval)
+        
+        values = [value]
+        for _ in range(4 - len(values)):
+            values.append(generate_number_without_value(interval, forbidden_value=values))
+        answer = str(bin(value))[2:]
+
+        values = shuffle_a_list(values)
+
+        return {'question': choice(sentences).format(number=value, l="$" if self.latex else ""),
+                'index_answer': values.index(answer),
+                'suggested_answer': [convert_value_to_latex(value) if self.latex else value for value in values]}
+
 
 class Geometry(QuestionsMCQ):
 
@@ -770,6 +793,16 @@ class Geometry(QuestionsMCQ):
             'triangle': (f'180{self.degree}', convert_degree_into_radian(f'180{self.degree}', latex=latex)),
             'carré': (f'360{self.degree}', convert_degree_into_radian(f'360{self.degree}', latex=latex)),
             'pentagone': (f'540{self.degree}', convert_degree_into_radian(f'540{self.degree}', latex=latex))
+        }
+        self.geometric_shapes_with_their_sides_number = {
+            'triangle': 3,
+            'carré': 4,
+            'pentagone': 5,
+            'hexagone': 6,
+            'heptagone': 7,
+            'octogone': 8,
+            'nonagone': 9,
+            'décagone': 10
         }
 
     @staticmethod
@@ -965,6 +998,29 @@ class Geometry(QuestionsMCQ):
                 'index_answer': values.index(answer),
                 'suggested_answer': values}
 
+    def calculate_perimeter(self, interval: tuple = (2, 10)) -> dict:
+        """
+        Generates a question asking to calculate the perimeter of a geometric shape.
+        """
+        sentences = ['Calcule le périmètre d\'un {l}{shape}{l} de côtés {l}{sides}{l}.',
+                     'Quelle est la longueur totale des côtés d\'un {l}{shape}{l} ayant des côtés de {l}{sides}{l} ?',
+                     'Détermine le périmètre d\'un {l}{shape}{l} dont les côtés mesurent {l}{sides}{l}.']
+        shape = choice(list(self.geometric_shapes_with_their_sides_number.keys()))
+        sides = [randint(*interval) for _ in range(self.geometric_shapes_with_their_sides_number[shape])]
+
+        answer = sum(sides)
+        values = [answer]
+        while len(values) < 4:
+            fake_sides = [randint(*interval) for _ in range(self.geometric_shapes_with_their_sides_number[shape])]
+            fake_value = sum(fake_sides)
+            if fake_value not in values:
+                values.append(fake_value)
+
+        return {'question': choice(sentences).format(shape=shape, sides=', '.join(map(str, sides)),
+                                                     l="$" if self.latex else ""),
+                'index_answer': values.index(answer),
+                'suggested_answer': values}
+
 
 class Trigonometry(QuestionsMCQ):
     def __init__(self, latex: bool = False):
@@ -1113,7 +1169,7 @@ class Trigonometry(QuestionsMCQ):
                 'index_answer': values.index(answer),
                 'suggested_answer': values}
 
-    def q_convert_value_into_degree_or_radian(self, **kwargs):
+    def q_convert_value_into_degree_or_radian(self):
         """
         Generates a question about converting a value between degrees and radians.
 

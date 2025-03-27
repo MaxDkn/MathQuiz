@@ -29,7 +29,7 @@ class TestMCQ(unittest.TestCase):
             print(result)
             count += 1
 
-TestMCQ().test_questions_about_remainder(latex=False)
+#  TestMCQ().test_questions_about_remainder(latex=False)
 
 
 def simple_test():
@@ -41,3 +41,21 @@ def simple_test():
                 raise ValueError(f"The '{important_key}' key is missing in the {data['question_name']} function.")
 
     #  print('Everything is correct.')
+
+if __name__ == "__main__":
+    def est_okay(liste):
+        for i in range(len(liste) - 1):
+            if liste[i] > liste[i + 1]:
+                return False
+        return True
+    
+    def tri(liste):
+        n = len(liste)
+        for i in range(n):
+            for j in range(0, n-i-1):
+                if liste[j] > liste[j+1]:
+                    liste[j], liste[j+1] = liste[j+1], liste[j]
+            input(i, liste)
+        return liste
+    
+    tri((1, 6, 3, 2))
