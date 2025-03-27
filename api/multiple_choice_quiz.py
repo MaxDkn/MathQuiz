@@ -730,6 +730,27 @@ class Arithmetic(QuestionsMCQ):
                 'index_answer': values.index(value),
                 'suggested_answer': [convert_value_to_latex(value) if self.latex else value for value in values]}
 
+    def q_remainder_of_division(self, interval: tuple = (10, 70), divisor_interval: tuple = (4, 9)) -> dict:
+        """
+        Ask the remainder of the division of two numbers.
+        :param interval: the interval of the dividend
+        :param divisor_interval: the interval of the divisor
+        :return: dictionary with the classic keys
+        """
+        assert min(divisor_interval) >= 4
+        sentences = ['Quel est le reste de la division {l}euclidienne{l} de {l}{dividend}{l} par {l}{divisor}{l} ?',
+                     '{l}{dividend}{l} {l}\\equiv{l} ? {l}\\pmod{{{divisor}}}{l}' if self.latex else '{l}{dividend}{l} ≡ ? (mod {divisor})']
+        dividend = randint(*interval)
+        divisor = randint(*divisor_interval)
+
+        answer = dividend % divisor
+        values = [answer]
+        for _ in range(3):
+            values.append(generate_number_without_value((0, divisor - 1), forbidden_value=values))
+
+        return {'question': choice(sentences).format(dividend=dividend, divisor=divisor, l="$" if self.latex else ""),
+                'index_answer': values.index(answer),
+                'suggested_answer': values}
 
 class Geometry(QuestionsMCQ):
 
@@ -1213,8 +1234,12 @@ def run(number_of_questions: Optional[int] = None, subjects: Union[list[str], st
         #  Draw the suggestions
         for i, suggested_answer in enumerate(question_data['suggested_answer']):
             print(marge + f'{letters[i]}. {suggested_answer}')
-
-        user_response = input(marge + 'Votre réponse : ').upper().strip()
+        try:
+            user_response = input(marge + 'Votre réponse : ').upper().strip()
+        except KeyboardInterrupt:
+            print('\nFin du quiz.')
+            break # Stop the quiz if the user presses Ctrl+C    
+        
         try:
             user_response_index = letters.index(user_response)
         except ValueError:
@@ -1228,19 +1253,5 @@ def run(number_of_questions: Optional[int] = None, subjects: Union[list[str], st
     print(f'Votre score est de {score} bonne réponse, soit {int(score / number_of_questions * 100)}% de réussite')
 
 
-def simple_test():
-    stats = {}
-    for _ in tqdm(range(15_000)):
-        #  data = generate_mcq_question("*", latex=True)
-        data = Geometry(latex=True).q_triangle_nature()
-        print(data)
-        
-        for important_key in ["question", "suggested_answer", "index_answer"]:
-            if important_key not in data.keys():
-                raise ValueError(f"The '{important_key}' key is missing in the {data['question_name']} function.")
-
-    #  print('Everything is correct.')
-
-
 if __name__ == '__main__':
-    simple_test()
+    run(10, ['Arithmetic', 'Trigonometry'])

@@ -5,6 +5,9 @@ to create npm install on Windows:
 > Set-ExecutionPolicy Restricted -Scope CurrentUser
 to use npm on Windows:
 > Set-ExecutionPolicy Unrestricted -Scope CurrentUser
+
+TO DO :
+- Refaire le front-end avec npx-create-app et tailwindcss pour meilleur design.
 """
 import logging
 import uvicorn
@@ -60,7 +63,7 @@ class ChooseSubject(BaseModel):
 
 @app.post('/api/generate', response_model=QuestionData)
 async def generate_a_question(subjects: ChooseSubject):
-    return generate_mcq_question(**subjects.dict())
+    return generate_mcq_question(**subjects.model_dump())
 
 
 @app.post('/api/score')
